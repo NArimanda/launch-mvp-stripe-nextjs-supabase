@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 // import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { StripeBuyButton } from '@/components/StripeBuyButton';
-import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 
 export default function PaymentPage() {
   // const { user } = useAuth();
@@ -66,8 +65,6 @@ export default function PaymentPage() {
     <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
       <h1 className="text-xl md:text-2xl font-bold mb-6 text-center">Complete Your Purchase</h1>
       
-      <SubscriptionStatus />
-
       <div className="w-full max-w-md px-4">
         <StripeBuyButton
           className="flex justify-center text-neutral"

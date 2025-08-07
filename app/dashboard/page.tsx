@@ -8,7 +8,6 @@ import { useAuth } from '@/contexts/AuthContext';
 
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/hooks/useSubscription';
-// import { OnboardingTour } from '@/components/OnboardingTour';
 import { useTrialStatus } from '@/hooks/useTrialStatus';
 import { motion } from 'framer-motion';
 import { 

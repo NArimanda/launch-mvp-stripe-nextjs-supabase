@@ -3,9 +3,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { PricingSection } from '@/components/PricingSection';
 import { useTrialStatus } from '@/hooks/useTrialStatus';
-// import { DemoWidget } from '@/components/DemoWidget';
-// import { MetricCard } from '@/components/MetricCard';
-import { TypewriterEffect } from '@/components/TypewriterEffect';
 import { FaReddit } from 'react-icons/fa';
 import { 
   FaGithub, 
@@ -25,7 +22,6 @@ import { useInView } from 'react-intersection-observer';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Link as ScrollLink } from 'react-scroll';
-import { VideoModal } from '@/components/VideoModal';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -34,22 +30,22 @@ const workflowSteps = [
   {
     title: "Step One",
     description: "First step of your workflow",
-    preview: <TypewriterEffect text="Processing step one..." />
+    preview: "Processing step one..."
   },
   {
     title: "Step Two",
     description: "Second step of your workflow",
-    preview: <TypewriterEffect text="Executing step two..." />
+    preview: "Executing step two..."
   },
   {
     title: "Step Three",
     description: "Third step of your workflow",
-    preview: <TypewriterEffect text="Running step three..." />
+    preview: "Running step three..."
   },
   {
     title: "Step Four",
     description: "Fourth step of your workflow",
-    preview: <TypewriterEffect text="Completing step four..." />
+    preview: "Completing step four..."
   }
 ];
 
@@ -192,8 +188,6 @@ export default function LandingPage() {
 
   const { scrollYProgress } = useScroll();
 
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] relative">
       {/* Enhanced Sticky Navigation */}
@@ -256,7 +250,6 @@ export default function LandingPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsVideoModalOpen(true)}
                   className="px-8 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
                   Watch Demo
@@ -276,7 +269,7 @@ export default function LandingPage() {
               <div className="relative">
                 <pre className="relative rounded-xl bg-slate-900 p-8 shadow-2xl">
                   <code className="text-sm sm:text-base text-slate-100">
-                    <TypewriterEffect text={`// 🚀 The Ultimate Dev Setup
+                    {`// 🚀 The Ultimate Dev Setup
 import { useCoffee, useCode } from '@/hooks/dev';
 
 export const DevLife = () => {
@@ -290,7 +283,7 @@ export const DevLife = () => {
         {bugs === 0 ? '🎉 No Bugs!' : '🐛 Debug Time'}
       </Status>
     </div>
-  );`} />
+  );`}
                   </code>
                 </pre>
               </div>
@@ -393,7 +386,6 @@ export const DevLife = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setIsVideoModalOpen(true)}
                   className="px-8 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
                   Watch Demo
@@ -411,12 +403,6 @@ export const DevLife = () => {
           </div>
         </div>
       </motion.div>
-
-      <VideoModal
-        isOpen={isVideoModalOpen}
-        onClose={() => setIsVideoModalOpen(false)}
-        videoId="S1cnQG0-LP4"
-      />
     </div>
   );
 }
