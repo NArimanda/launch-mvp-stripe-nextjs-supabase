@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export function AccountManagement() {
-  const { user, signOut } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const router = useRouter();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [error, setError] = useState('');
@@ -19,16 +19,8 @@ export function AccountManagement() {
     setError('');
     
     try {
-      const response = await fetch(`/api/user/delete?userId=${user.id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete account');
-      }
-      
-      await signOut();
+      await deleteAccount();
+      // deleteAccount will handle signOut internally
       router.push('/login');
     } catch (error) {
       console.error('Delete account error:', error);
@@ -49,7 +41,7 @@ export function AccountManagement() {
         <p><span className="font-medium">Account Type:</span> {isOAuthUser ? 'Google Account' : 'Email Account'}</p>
       </div>
       
-      <div className="">
+      <div className="space-y-2">
         {!isOAuthUser && (
           <button
             onClick={() => router.push(`/reset-password?email=${encodeURIComponent(user?.email || '')}`)}
@@ -59,12 +51,12 @@ export function AccountManagement() {
           </button>
         )}
 
-        {/* <button
+        <button
           onClick={() => setIsDeleteModalOpen(true)}
           className="w-full text-left px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50"
         >
           Delete Account
-        </button> */}
+        </button>
       </div>
 
       {/* Delete Account Modal */}

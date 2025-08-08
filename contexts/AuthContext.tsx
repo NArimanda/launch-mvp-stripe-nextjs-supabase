@@ -1,12 +1,11 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { 
   Session, 
   User, 
-  SupabaseClient, 
-  AuthTokenResponse 
+  SupabaseClient
 } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -27,54 +26,15 @@ interface AuthContextType {
   updatePassword: (newPassword: string) => Promise<void>;
   updateEmail: (newEmail: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  isSubscriber: boolean;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
-
-interface SubscriptionPayload {
-  new: {
-    user_id: string;
-    [key: string]: any;
-  };
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubscriber, setIsSubscriber] = useState(false);
-
-  const checkSubscription = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .in('status', ['active', 'trialing'])
-        .order('created_at', { ascending: false })
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Subscription check error:', error);
-        setIsSubscriber(false);
-        return;
-      }
-
-      // console.log("AuthContext - subscription data: ", data)
-
-      const isValid = data && 
-        ['active', 'trialing'].includes(data.status) && 
-        new Date(data.current_period_end) > new Date();
-      // console.log("AuthContext -  isValid: ", data)
-
-      setIsSubscriber(!!isValid);
-      console.log("AuthContext -  set isSubscriber: ", isSubscriber)
-    } catch (error) {
-      console.error('Subscription check error:', error);
-      setIsSubscriber(false);
-    }
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -85,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(true);
         console.log("AuthContext - Starting Try in InitializeAuth!");
 
-        // // First, get initial session
+        // First, get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error || !mounted) {
@@ -97,10 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-
-        if (currentUser) {
-          await checkSubscription(currentUser.id);
-        }
         
         // Then set up listener for future changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -110,12 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const newUser = newSession?.user ?? null;
             setSession(newSession);
             setUser(newUser);
-            
-            if (newUser) {
-              await checkSubscription(newUser.id);
-            } else {
-              setIsSubscriber(false);
-            }
           }
         );
 
@@ -133,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initializeAuth();
-  }, [checkSubscription]);
+  }, []);
 
   const value = {
     user,
@@ -234,14 +184,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (dataError) throw dataError;
 
-      // Then delete the user's subscription if it exists
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .delete()
-        .eq('user_id', user?.id);
-
-      if (subscriptionError) throw subscriptionError;
-
       // Finally delete the user's auth account
       const { error: authError } = await supabase.auth.admin.deleteUser(
         user?.id as string
@@ -252,9 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Sign out after successful deletion
       await supabase.auth.signOut();
     },
-    isSubscriber,
   };
-
 
   return (
     <AuthContext.Provider value={value}>
