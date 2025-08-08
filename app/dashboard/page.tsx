@@ -1,14 +1,9 @@
 "use client";
 
-// import { useWebSocket } from '@/contexts/WebSocketContext';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-
-
 import { useRouter } from 'next/navigation';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useTrialStatus } from '@/hooks/useTrialStatus';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
@@ -84,77 +79,17 @@ const recentActivity = [
 ];
 
 export default function Dashboard() {
-
-  
-  // const { isConnected } = useWebSocket();
-  // const [fullResponse, setFullResponse] = useState('');
-  const { user, isSubscriber, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
-  const { subscription, isLoading: isSubLoading, fetchSubscription } = useSubscription();
-  const [hasCheckedSubscription, setHasCheckedSubscription] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const { isInTrial, isLoading: isTrialLoading } = useTrialStatus();
   const [authTimeout, setAuthTimeout] = useState(false);
 
-  // Add new states for dashboard functionality
-  // const [repositories, setRepositories] = useState([]);
-  // const [feedbackSources, setFeedbackSources] = useState([]);
-  // const [recentFeedback, setRecentFeedback] = useState([]);
-  // const [pendingPRs, setPendingPRs] = useState([]);
-
-  // First check - Subscription and trial check
+  // Add useEffect for auth check
   useEffect(() => {
-    if (isSubLoading || isTrialLoading) return;
-    
-    const hasValidSubscription = ['active', 'trialing'].includes(subscription?.status || '');
-    
-    console.log('Access check isInTrial:', {
-      hasSubscription: !!subscription,
-      status: subscription?.status,
-      isInTrial: isInTrial,
-      validUntil: subscription?.current_period_end
-    });
-
-    // Only redirect if there's no valid subscription AND no valid trial
-    if (!hasValidSubscription && !isInTrial) {
-      console.log('No valid subscription or trial, redirecting');
-      router.replace('/profile');
+    if (!user && !isAuthLoading) {
+      router.push('/login');
     }
-  }, [subscription, isSubLoading, isTrialLoading, router, isInTrial]);
-
-  // Second check - Auth check
-  useEffect(() => {
-    if (isAuthLoading || isTrialLoading) return;
-
-    console.log('Access check:', {
-      isSubscriber,
-      hasCheckedSubscription,
-      isInTrial: isInTrial,
-      authLoading: isAuthLoading,
-    });
-
-    if (!hasCheckedSubscription) {
-      setHasCheckedSubscription(true);
-      
-      // Allow access for both subscribers and trial users
-      if (!user || (!isSubscriber && !isInTrial && !isAuthLoading)) {
-        console.log('No valid subscription or trial, redirecting');
-        router.replace('/profile');
-      }
-    }
-  }, [isSubscriber, isAuthLoading, hasCheckedSubscription, router, user, subscription, isTrialLoading, isInTrial]);
-
-  // Add refresh effect
-  useEffect(() => {
-    const refreshSubscription = async () => {
-      await fetchSubscription();
-      setHasCheckedSubscription(true);
-    };
-    
-    if (user?.id) {
-      refreshSubscription();
-    }
-  }, [user?.id, fetchSubscription]);
+  }, [user, isAuthLoading, router]);
 
   useEffect(() => {
     if (user?.id) {
@@ -176,25 +111,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!user && (isAuthLoading || isTrialLoading)) {
+      if (!user && isAuthLoading) {
         setAuthTimeout(true);
       }
     }, AUTH_TIMEOUT);
     
     return () => clearTimeout(timer);
-  }, [user, isAuthLoading, isTrialLoading]);
-
-  // useEffect(() => {
-  //   if (!hasCompletedOnboarding) {
-  //     router.push('/onboarding');
-  //   }
-  // }, [hasCompletedOnboarding, router]);
+  }, [user, isAuthLoading]);
 
   // Update the loading check
-  if (!user && (isAuthLoading || isTrialLoading) && !hasCheckedSubscription) {
+  if (!user && isAuthLoading) {
     console.log('user: ', user)
     console.log('isAuthLoading: ', isAuthLoading)
-    console.log('hasCheckedSubscription: ', hasCheckedSubscription)
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -209,7 +137,6 @@ export default function Dashboard() {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120]">
       {/* Dashboard Header */}
@@ -221,7 +148,7 @@ export default function Dashboard() {
             </h1>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-slate-600 dark:text-slate-300">
-                {isInTrial ? "Trial Period" : "Premium Plan"}
+                Welcome back!
               </span>
             </div>
           </div>

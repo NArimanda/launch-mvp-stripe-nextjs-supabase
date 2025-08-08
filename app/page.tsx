@@ -1,13 +1,11 @@
 "use client";
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useTrialStatus } from '@/hooks/useTrialStatus';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
   const { user } = useAuth();
-  const { isInTrial } = useTrialStatus();
   const router = useRouter();
 
   return (
