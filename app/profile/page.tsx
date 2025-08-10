@@ -45,10 +45,10 @@ function ProfileContent() {
               Manage your account settings and preferences
             </p>
           </div>
-          
+        
           <div className="p-6">
-            <AccountManagement />
-          </div>
+        <AccountManagement />
+            </div>
         </div>
       </div>
     </div>
@@ -73,9 +73,9 @@ export default function ProfilePage() {
         </div>
       }
     >
-      <Suspense fallback={<LoadingSpinner />}>
-        <ProfileContent />
-      </Suspense>
+    <Suspense fallback={<LoadingSpinner />}>
+      <ProfileContent />
+    </Suspense>
     </ErrorBoundary>
   );
 }

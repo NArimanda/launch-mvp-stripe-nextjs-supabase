@@ -1,5 +1,7 @@
 // Directory: /config/api.ts
 
+import { Images } from "lucide-react";
+
 /**
  * API configuration for the application
  */
@@ -13,6 +15,12 @@ export const API_CONFIG = {
       processVoice: '/process-voice',
       setTimer: '/set-timer',
     },
+    Images:{
+      remotePatterns: {
+        protocol: 'https',
+        hostname: 'ajfxkdcloghidklsqgqf.supabase.co',
+      }
+    }
   } as const;
   
 /**

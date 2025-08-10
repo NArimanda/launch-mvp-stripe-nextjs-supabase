@@ -1,23 +1,38 @@
-"use client";
+import HeroCarousel from "@/components/HeroCarousel"; // your existing hero
+import MovieRow from "@/components/MovieRow";
+import SearchBar from "@/components/SearchBar";
+import { createClient } from "@/utils/supabase/server";
 
-import HeroCarousel from '@/components/HeroCarousel';
+export default async function Home() {
+  const supabase = createClient();
+  const today = new Date().toISOString().slice(0, 10);
 
-export default function LandingPage() {
+  const { data: upcoming10 } = await supabase
+    .from("movies")
+    .select("id,slug,title,image_url,release_date")
+    .gte("release_date", today)
+    .order("release_date", { ascending: true })
+    .limit(10);
+
+  // Optional: if you add a boolean column `is_trending` in movies
+  const { data: trending } = await supabase
+    .from("movies")
+    .select("id,slug,title,image_url,release_date")
+    .eq("is_trending", true)       // remove if you don't have this column
+    .order("release_date", { ascending: true })
+    .limit(10);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            Featured Articles
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-300">
-            Discover the latest insights and stories
-          </p>
-        </div>
-        
-        <HeroCarousel />
+    <main className="px-4 py-6 max-w-7xl mx-auto">
+      <HeroCarousel />
+
+      <div className="mt-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Upcoming & Trending</h1>
+        <SearchBar />
       </div>
-    </div>
+
+      {!!(trending && trending.length) && <MovieRow title="Trending Now" movies={trending} />}
+      <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
+    </main>
   );
 }
-
