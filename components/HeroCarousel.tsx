@@ -30,6 +30,11 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
     };
   }, [next]);
 
+  // Debug: Log current active article
+  useEffect(() => {
+    console.log('Active article:', items[i]?.title, 'URL:', items[i]?.href);
+  }, [i, items]);
+
   const handleMouseEnter = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -39,6 +44,10 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
   const handleMouseLeave = useCallback(() => {
     timerRef.current = setInterval(next, AUTOPLAY_MS);
   }, [next]);
+
+  const handleArticleClick = useCallback((item: HeroItem) => {
+    console.log('Clicked article:', item.title, 'URL:', item.href);
+  }, []);
 
   if (!items.length) {
     return (
@@ -57,9 +66,14 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
             href={item.href}
             target="_blank"
             rel="noopener noreferrer"
-            className={`absolute inset-0 transition-opacity duration-500 ${idx === i ? "opacity-100" : "opacity-0"}`}
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              idx === i 
+                ? "opacity-100 z-10 pointer-events-auto" 
+                : "opacity-0 z-0 pointer-events-none"
+            }`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
+            onClick={() => handleArticleClick(item)}
           >
             <Image
               src={item.imageUrl}
@@ -83,16 +97,16 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
       <button
         aria-label="Previous"
         onClick={prev}
-        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors"
+        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors z-20"
       >‹</button>
       <button
         aria-label="Next"
         onClick={next}
-        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors"
+        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-colors z-20"
       >›</button>
 
       {/* dots */}
-      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2">
+      <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-20">
         {items.map((_, idx) => (
           <button
             key={idx}
