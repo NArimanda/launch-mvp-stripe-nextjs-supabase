@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 function normalizeSlug(input: string) {
   const s = decodeURIComponent(input)
@@ -20,13 +21,13 @@ export default async function MoviePage({ params }: { params: { slug: string } }
   ]));
 
   // Try to match any of the candidates
-  let query = supabase
+  const query = supabase
     .from("movies")
     .select("id,slug,title,image_url,release_date,description")
     .in("slug", candidateSlugs)
     .limit(1);
 
-  let { data: rows, error } = await query;
+  const { data: rows } = await query;
   let movie = rows?.[0];
 
   // Fallback: loose match on title if still not found
@@ -40,6 +41,13 @@ export default async function MoviePage({ params }: { params: { slug: string } }
   }
 
   if (!movie) return notFound();
+
+  const marketButtons = [
+    { title: "Opening Day", timeframe: "opening-day" },
+    { title: "Weekend", timeframe: "weekend" },
+    { title: "Week", timeframe: "week" },
+    { title: "Month", timeframe: "month" },
+  ];
 
   return (
     <div className="px-4 py-6 max-w-5xl mx-auto">
@@ -59,8 +67,41 @@ export default async function MoviePage({ params }: { params: { slug: string } }
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Markets</h2>
-        <p className="text-sm text-slate-600">Coming soon: Rotten Tomatoes % ranges, Box Office ranges, etc.</p>
+        <h2 className="text-lg font-semibold mb-4">Markets</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Domestic Section */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Domestic</h3>
+            <div className="flex flex-col gap-3">
+              {marketButtons.map((button) => (
+                <Link
+                  key={button.title}
+                  href={`/movie/${movie.slug}/domestic/${button.timeframe}`}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-md hover:shadow-lg"
+                >
+                  {button.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Worldwide Section */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Worldwide</h3>
+            <div className="flex flex-col gap-3">
+              {marketButtons.map((button) => (
+                <Link
+                  key={`worldwide-${button.title}`}
+                  href={`/movie/${movie.slug}/worldwide/${button.timeframe}`}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-md hover:shadow-lg"
+                >
+                  {button.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );
