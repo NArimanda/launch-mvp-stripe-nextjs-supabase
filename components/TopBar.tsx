@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { BuyMeCoffee } from './BuyMeCoffee';
+import BalanceTracker from '@/contexts/BalanceTracker';
 
 // TopBar component handles user profile display and navigation
 export default function TopBar() {
@@ -86,6 +87,7 @@ export default function TopBar() {
                   <div className="w-8 h-8 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary dark:text-primary-light">
                     {user.email?.[0].toUpperCase()}
                   </div>
+                  <BalanceTracker />
                 </button>
                 
                 {isDropdownOpen && (
