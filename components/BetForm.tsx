@@ -7,15 +7,18 @@ type Bin = {
   bin_id: string;
   position: number;
   label: string;
+  lower_cents: number;
+  upper_cents: number | null;
 };
 
-export default function BetForm({
-  marketId,
-  bins,
-}: {
+interface BetFormProps {
   marketId: string;
   bins: Bin[];
-}) {
+  type: string;
+  timeframe: string;
+}
+
+export default function BetForm({ marketId, bins }: BetFormProps) {
   const { user } = useAuth();
   const [side, setSide] = React.useState<"YES" | "NO">("YES");
   const [selectedBinId, setSelectedBinId] = React.useState<string | null>(bins[0]?.bin_id ?? null);
@@ -23,6 +26,33 @@ export default function BetForm({
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
+
+  // Get the bin edges for the slider
+  const binEdges = React.useMemo(() => {
+    const edges = bins.map(bin => bin.lower_cents);
+    const lastBin = bins[bins.length - 1];
+    if (lastBin?.upper_cents !== null && lastBin?.upper_cents !== undefined) {
+      edges.push(lastBin.upper_cents);
+    }
+    return edges;
+  }, [bins]);
+
+  // Convert cents to millions for display
+  const centsToMillions = (cents: number) => cents / 100 / 1_000_000;
+  const formatCurrency = (millions: number) => {
+    if (millions >= 1000) {
+      return `$${(millions / 1000).toFixed(millions % 1000 === 0 ? 0 : 1)}B`;
+    }
+    return `$${millions.toFixed(millions % 1 === 0 ? 0 : 1)}M`;
+  };
+
+  // Find the bin that matches the selected range
+  const findBinForRange = (lowerCents: number, upperCents: number | null) => {
+    return bins.find(bin => 
+      bin.lower_cents === lowerCents && 
+      (upperCents === null ? bin.upper_cents === null : bin.upper_cents === upperCents)
+    );
+  };
 
   // Placeholder: multiplier based on simple crowding (fewer points => higher payout)
   // Replace with your pricing function later
@@ -64,8 +94,9 @@ export default function BetForm({
         throw new Error(j?.error ?? "Failed to place bet");
       }
       setOk("Bet placed!");
-    } catch (e: any) {
-      setError(e?.message ?? "Something went wrong");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Something went wrong";
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -95,23 +126,22 @@ export default function BetForm({
 
       <div className="mb-4">
         <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">Select a range:</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {bins.map((b) => (
-            <button
-              key={b.bin_id}
-              onClick={() => setSelectedBinId(b.bin_id)}
-              type="button"
-              className={`text-left px-3 py-2 rounded-lg border ${
-                selectedBinId === b.bin_id
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                  : "border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50"
-              }`}
-            >
-              <div className="text-sm font-medium">{b.label}</div>
-              <div className="text-[11px] text-slate-500">Bin #{b.position}</div>
-            </button>
-          ))}
-        </div>
+        <RangeSlider 
+          edges={binEdges}
+          onRangeChange={(lowerIndex, upperIndex) => {
+            const lowerCents = binEdges[lowerIndex];
+            const upperCents = upperIndex < binEdges.length - 1 ? binEdges[upperIndex + 1] : null;
+            const bin = findBinForRange(lowerCents, upperCents);
+            setSelectedBinId(bin?.bin_id ?? null);
+          }}
+          formatValue={formatCurrency}
+          centsToMillions={centsToMillions}
+        />
+        {selectedBinId && (
+          <div className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+            Selected: <span className="font-medium">{bins.find(b => b.bin_id === selectedBinId)?.label}</span>
+          </div>
+        )}
       </div>
 
       <div className="mb-4 flex items-center gap-3">
@@ -141,6 +171,136 @@ export default function BetForm({
       >
         {submitting ? "Placing…" : "Submit Bet"}
       </button>
+    </div>
+  );
+}
+
+interface RangeSliderProps {
+  edges: number[];
+  onRangeChange: (lowerIndex: number, upperIndex: number) => void;
+  formatValue: (value: number) => string;
+  centsToMillions: (cents: number) => number;
+}
+
+function RangeSlider({ edges, onRangeChange, formatValue, centsToMillions }: RangeSliderProps) {
+  const [lowerIndex, setLowerIndex] = React.useState(0);
+  const [upperIndex, setUpperIndex] = React.useState(edges.length - 1); // Start at maximum
+  const [isDragging, setIsDragging] = React.useState<"lower" | "upper" | null>(null);
+  const sliderRef = React.useRef<HTMLDivElement>(null);
+
+  const handleLowerChange = (newIndex: number) => {
+    const clampedIndex = Math.max(0, Math.min(newIndex, upperIndex));
+    setLowerIndex(clampedIndex);
+    onRangeChange(clampedIndex, upperIndex);
+  };
+
+  const handleUpperChange = (newIndex: number) => {
+    const clampedIndex = Math.max(lowerIndex, Math.min(newIndex, edges.length - 1));
+    setUpperIndex(clampedIndex);
+    onRangeChange(lowerIndex, clampedIndex);
+  };
+
+  const handleMouseDown = (slider: "lower" | "upper") => {
+    setIsDragging(slider);
+  };
+
+  const handleMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isDragging || !sliderRef.current) return;
+
+    const rect = sliderRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const index = Math.round(percentage * (edges.length - 1));
+
+    if (isDragging === "lower") {
+      handleLowerChange(index);
+    } else {
+      handleUpperChange(index);
+    }
+  }, [isDragging, edges.length]);
+
+  const handleMouseUp = React.useCallback(() => {
+    setIsDragging(null);
+  }, []);
+
+  React.useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  const lowerPercentage = (lowerIndex / (edges.length - 1)) * 100;
+  const upperPercentage = (upperIndex / (edges.length - 1)) * 100;
+
+  // Format the range display
+  const formatRangeDisplay = () => {
+    const lowerValue = formatValue(centsToMillions(edges[lowerIndex]));
+    const upperValue = upperIndex === edges.length - 1 
+      ? formatValue(centsToMillions(edges[upperIndex])) + "+"
+      : formatValue(centsToMillions(edges[upperIndex]));
+    
+    return `${lowerValue} - ${upperValue}`;
+  };
+
+  return (
+    <div className="relative">
+      {/* Track */}
+      <div 
+        ref={sliderRef}
+        className="h-2 bg-slate-200 dark:bg-slate-600 rounded-full relative cursor-pointer"
+      >
+        {/* Selected range */}
+        <div 
+          className="absolute h-full bg-blue-500 rounded-full"
+          style={{
+            left: `${lowerPercentage}%`,
+            width: `${upperPercentage - lowerPercentage}%`
+          }}
+        />
+        
+        {/* Lower thumb */}
+        <div
+          className="absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer transform -translate-y-1/2 -translate-x-1/2 hover:scale-110 transition-transform z-10"
+          style={{ left: `${lowerPercentage}%` }}
+          onMouseDown={() => handleMouseDown("lower")}
+        />
+        
+        {/* Upper thumb */}
+        <div
+          className="absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer transform -translate-y-1/2 -translate-x-1/2 hover:scale-110 transition-transform z-10"
+          style={{ left: `${upperPercentage}%` }}
+          onMouseDown={() => handleMouseDown("upper")}
+        />
+      </div>
+
+      {/* Responsive Range Display */}
+      <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+        <div className="text-center">
+          <div className="text-sm text-slate-600 dark:text-slate-300 mb-1">Selected Range</div>
+          <div className="text-lg font-semibold text-slate-900 dark:text-white">
+            {formatRangeDisplay()}
+          </div>
+          <div className="text-xs text-slate-500 mt-1">
+            Drag the handles to adjust your range
+          </div>
+        </div>
+      </div>
+
+      {/* Tick marks */}
+      <div className="flex justify-between mt-3">
+        {edges.map((edge, index) => (
+          <div
+            key={index}
+            className="w-px h-2 bg-slate-300 dark:bg-slate-500"
+            title={formatValue(centsToMillions(edge))}
+          />
+        ))}
+      </div>
     </div>
   );
 }

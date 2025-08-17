@@ -1,13 +1,14 @@
 'use client';
 
 import dynamic from "next/dynamic";
+import { type MarketType, type Timeframe } from "@/lib/binPresets";
 
 type BinRow = {
   market_id: string;
   bin_id: string;
   position: number;
-  lower_cents: string | number;
-  upper_cents: string | number | null;
+  lower_cents: number;
+  upper_cents: number | null;
   is_open_ended: boolean;
   label: string;
 };
@@ -28,9 +29,11 @@ interface MarketContentProps {
   marketId: string;
   bins: BinRow[];
   stats: BetStat[];
+  type: MarketType;
+  timeframe: Timeframe;
 }
 
-export default function MarketContent({ marketId, bins, stats }: MarketContentProps) {
+export default function MarketContent({ marketId, bins, stats, type, timeframe }: MarketContentProps) {
   return (
     <>
       {/* Heatmap / distribution */}
@@ -45,7 +48,7 @@ export default function MarketContent({ marketId, bins, stats }: MarketContentPr
       {/* Bet form */}
       <div className="mb-10">
         <h2 className="text-xl font-semibold mb-3">Place a Bet</h2>
-        <BetForm marketId={marketId} bins={bins} />
+        <BetForm marketId={marketId} bins={bins} type={type} timeframe={timeframe} />
       </div>
     </>
   );

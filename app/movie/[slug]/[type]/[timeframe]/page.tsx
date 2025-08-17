@@ -112,7 +112,7 @@ export default async function MarketPage({
         </p>
       </div>
 
-      <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} />
+      <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} type={type} timeframe={timeframe} />
     </div>
   );
 }
