@@ -14,7 +14,9 @@ type Props = {
 
 function fmt(d?: string | null) {
   if (!d) return "";
-  const date = new Date(d);
+  // Fix timezone issue: parse as local date instead of UTC
+  const [year, month, day] = d.split('-').map(Number);
+  const date = new Date(year, month - 1, day); // month is 0-indexed
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 

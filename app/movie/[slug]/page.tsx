@@ -59,7 +59,12 @@ export default async function MoviePage({ params }: { params: { slug: string } }
           <h1 className="text-2xl font-semibold">{movie.title}</h1>
           {movie.release_date && (
             <p className="text-sm text-slate-600 mt-1">
-              Releases {new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric" }).format(new Date(movie.release_date))}
+              Releases {(() => {
+                // Fix timezone issue: parse as local date instead of UTC
+                const [year, month, day] = movie.release_date.split('-').map(Number);
+                const date = new Date(year, month - 1, day); // month is 0-indexed
+                return new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric" }).format(date);
+              })()}
             </p>
           )}
           {movie.description && <p className="mt-3 text-slate-700 dark:text-slate-300">{movie.description}</p>}
