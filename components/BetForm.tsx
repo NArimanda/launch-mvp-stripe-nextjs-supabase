@@ -19,14 +19,23 @@ interface BetFormProps {
 }
 
 export default function BetForm({ marketId, bins }: BetFormProps) {
-  const { user } = useAuth();
-  const [side, setSide] = React.useState<"YES" | "NO">("YES");
-  const [selectedBinId, setSelectedBinId] = React.useState<string | null>(bins[0]?.bin_id ?? null);
+  const { user, session } = useAuth();
   const [selectedRange, setSelectedRange] = React.useState<{ lower: number; upper: number } | null>(null);
   const [points, setPoints] = React.useState<number>(50);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
+
+  // Debug: Log authentication state
+  React.useEffect(() => {
+    console.log("BetForm auth state:", {
+      user: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      session: !!session,
+      sessionExpires: session?.expires_at
+    });
+  }, [user, session]);
 
   // Get the bin edges for the slider
   const binEdges = React.useMemo(() => {
@@ -50,46 +59,94 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
   // Placeholder: multiplier based on simple crowding (fewer points => higher payout)
   // Replace with your pricing function later
   const crowdFactor = 1.0; // TODO: pull real bin totals if you want live quotes here
-  const baseOdds = side === "YES" ? 1.8 : 1.8;
+  const baseOdds = 1.8;
   const potentialPayout = Math.max(1, Math.round(points * baseOdds * crowdFactor));
 
   const submit = async () => {
     setError(null);
     setOk(null);
-    if (!user?.id) {
-      setError("Please sign in to place a bet.");
+
+    console.log("BetForm submit - user:", user?.id, "user object:", user);
+
+    if (!user) {
+      setError("Please sign in to place a bet");
       return;
     }
+
     if (!selectedRange) {
-      setError("Select a range.");
+      setError("Please select a range");
       return;
     }
-    if (points <= 0) {
-      setError("Enter a positive point amount.");
+
+    if (points < 1) {
+      setError("Please enter a valid number of points");
       return;
     }
 
     setSubmitting(true);
+
     try {
-      // Stub API; implement atomic wallet debit + bet insert on server
+      // Format the range as string for API
+      const formattedRange = `[${centsToMillions(selectedRange.lower)} - ${centsToMillions(selectedRange.upper)}]`;
+      
+      console.log("Sending bet request:", {
+        market_id: marketId,
+        selected_range: formattedRange,
+        points,
+        userId: user.id,
+        bins: bins // Include bins data for bin_id calculation
+      });
+
+      // Prepare headers with session token as fallback
+      const headers: Record<string, string> = { 
+        "Content-Type": "application/json" 
+      };
+      
+      // Add authorization header with session token if available
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+        console.log("Adding authorization header with session token");
+      } else {
+        console.log("No session access token available");
+      }
+
       const res = await fetch("/api/bets/place", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           market_id: marketId,
-          selected_bin_id: selectedBinId,
-          side: side === "YES",
+          selected_range: formattedRange,
           points,
+          bins, // Include bins data
         }),
       });
+
+      console.log("API response status:", res.status);
+
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ?? "Failed to place bet");
+        const errorData = await res.json().catch(() => ({}));
+        console.error("API error response:", errorData);
+        
+        // Display detailed error information
+        const errorMessage = errorData.error || "Failed to place bet";
+        const errorDetails = errorData.details ? ` (${errorData.details})` : "";
+        const fullErrorMessage = errorMessage + errorDetails;
+        
+        throw new Error(fullErrorMessage);
       }
-      setOk("Bet placed!");
+
+      const result = await res.json();
+      console.log("API success response:", result);
+
+      setOk("Bet placed successfully!");
+      setSelectedRange(null);
+      setPoints(50);
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : "Something went wrong";
-      setError(errorMessage);
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -97,24 +154,10 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
 
   return (
     <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-      <div className="flex flex-wrap gap-3 items-center mb-4">
-        <div className="text-sm text-slate-600 dark:text-slate-300">Side:</div>
-        <div className="inline-flex rounded-full overflow-hidden border border-slate-300 dark:border-slate-600">
-          <button
-            className={`px-4 py-1 text-sm ${side === "YES" ? "bg-green-600 text-white" : "bg-transparent text-slate-800 dark:text-slate-200"}`}
-            onClick={() => setSide("YES")}
-            type="button"
-          >
-            YES
-          </button>
-          <button
-            className={`px-4 py-1 text-sm ${side === "NO" ? "bg-red-600 text-white" : "bg-transparent text-slate-800 dark:text-slate-200"}`}
-            onClick={() => setSide("NO")}
-            type="button"
-          >
-            NO
-          </button>
-        </div>
+      {/* Debug info - remove this later */}
+      <div className="mb-4 p-2 bg-yellow-100 dark:bg-yellow-900 text-xs">
+        Debug: User ID: {user?.id || 'Not authenticated'} | 
+        User object: {user ? 'Present' : 'Missing'}
       </div>
 
       <div className="mb-4">
@@ -125,7 +168,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
             const lowerCents = binEdges[lowerIndex];
             const upperCents = binEdges[upperIndex]; // Use the current edge, not the next one
             setSelectedRange({ lower: lowerCents, upper: upperCents });
-            setSelectedBinId(null); // Clear bin selection since we're using custom range
           }}
           formatValue={formatCurrency}
           centsToMillions={centsToMillions}

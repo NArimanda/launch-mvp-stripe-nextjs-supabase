@@ -22,6 +22,19 @@ export default async function Home() {
     .order("release_date", { ascending: true })
     .limit(10);
 
+  // In theaters: movies released within the last month
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const oneMonthAgoStr = oneMonthAgo.toISOString().slice(0, 10);
+
+  const { data: inTheaters } = await supabase
+    .from("movies")
+    .select("id,slug,title,image_url,release_date")
+    .gte("release_date", oneMonthAgoStr)
+    .lt("release_date", today)
+    .order("release_date", { ascending: false })
+    .limit(10);
+
   return (
     <main className="px-4 py-6 max-w-7xl mx-auto">
       <HeroCarousel />
@@ -33,6 +46,7 @@ export default async function Home() {
 
       {!!(trending && trending.length) && <MovieRow title="Trending Now" movies={trending} />}
       <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
+      {!!(inTheaters && inTheaters.length) && <MovieRow title="In Theaters" movies={inTheaters} />}
     </main>
   );
 }
