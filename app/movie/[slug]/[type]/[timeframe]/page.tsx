@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { buildBinsForMarket } from "@/lib/binPresets";
 import MarketContentWrapper from "@/components/MarketContentWrapper";
+import CountdownTimer from "@/components/CountdownTimer";
 
 type BetRow = { selected_bin_id: string | null; side: boolean | null; points: number | null };
 
@@ -61,7 +62,7 @@ export default async function MarketPage({
   // market
   const { data: market } = await supabase
     .from("markets")
-    .select("id, type, timeframe, status, end_time")
+    .select("id, type, timeframe, status, end_time, close_time")
     .eq("movie_id", movie.id)
     .eq("type", type)
     .eq("timeframe", timeframe)
@@ -105,14 +106,19 @@ export default async function MarketPage({
         <Link href={`/movie/${movie.slug}`} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-4 inline-block">
           ← Back to {movie.title}
         </Link>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{title}</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Market status: <span className="font-medium">{market.status}</span>
-          {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{title}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Market status: <span className="font-medium">{market.status}</span>
+              {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
+            </p>
+          </div>
+          <CountdownTimer closeTime={market.close_time} marketStatus={market.status} />
+        </div>
       </div>
 
-      <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} type={type} timeframe={timeframe} />
+      <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} type={type} timeframe={timeframe} marketStatus={market.status} />
     </div>
   );
 }

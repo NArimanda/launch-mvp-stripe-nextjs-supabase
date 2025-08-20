@@ -12,8 +12,9 @@ interface MarketContentWrapperProps {
   stats: any[];
   type: MarketType;
   timeframe: Timeframe;
+  marketStatus: string;
 }
 
-export default function MarketContentWrapper({ marketId, bins, stats, type, timeframe }: MarketContentWrapperProps) {
-  return <MarketContent marketId={marketId} bins={bins} stats={stats} type={type} timeframe={timeframe} />;
+export default function MarketContentWrapper({ marketId, bins, stats, type, timeframe, marketStatus }: MarketContentWrapperProps) {
+  return <MarketContent marketId={marketId} bins={bins} stats={stats} type={type} timeframe={timeframe} marketStatus={marketStatus} />;
 } 
