@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   Wallet,
-  Activity
+  Activity,
+  History
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -21,6 +22,7 @@ interface UserBet {
   potential_payout: number;
   status: string;
   outcome: string;
+  placed_at?: string;
   market: {
     movie_id: string;
     type: string;
@@ -39,8 +41,10 @@ export default function Portfolio() {
   const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
+  const [historyBets, setHistoryBets] = useState<UserBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [authTimeout, setAuthTimeout] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
 
   // Add useEffect for auth check
   useEffect(() => {
@@ -72,7 +76,7 @@ export default function Portfolio() {
         }
 
         // Fetch user's pending bets with market and movie info
-        const { data: betsData, error: betsError } = await supabase
+        const { data: pendingBetsData, error: pendingBetsError } = await supabase
           .from('bets')
           .select(`
             id, 
@@ -82,6 +86,7 @@ export default function Portfolio() {
             potential_payout, 
             status, 
             outcome,
+            placed_at,
             markets!inner(
               movie_id,
               type,
@@ -97,22 +102,48 @@ export default function Portfolio() {
           .eq('user_id', user.id)
           .eq('outcome', 'pending');
 
-        console.log('Bets query result:', { betsData, betsError });
-        console.log('User ID being queried:', user.id);
-        console.log('Query filters: user_id =', user.id, 'outcome = pending');
+        // Fetch user's history bets (non-pending) with market and movie info
+        const { data: historyBetsData, error: historyBetsError } = await supabase
+          .from('bets')
+          .select(`
+            id, 
+            market_id, 
+            selected_range, 
+            points, 
+            potential_payout, 
+            status, 
+            outcome,
+            placed_at,
+            markets!inner(
+              movie_id,
+              type,
+              timeframe,
+              status,
+              movies!inner(
+                slug,
+                release_date,
+                image_url
+              )
+            )
+          `)
+          .eq('user_id', user.id)
+          .neq('outcome', 'pending')
+          .order('placed_at', { ascending: false });
 
-        if (betsError) {
-          console.error('Error fetching bets:', betsError);
+        console.log('Bets query result:', { pendingBetsData, historyBetsData });
+
+        if (pendingBetsError) {
+          console.error('Error fetching pending bets:', pendingBetsError);
         } else {
-          console.log('Raw bets data:', betsData);
-          console.log('Number of bets found:', betsData?.length || 0);
+          console.log('Raw pending bets data:', pendingBetsData);
+          console.log('Number of pending bets found:', pendingBetsData?.length || 0);
           
           // Transform the data to flatten the nested structure
-          const transformedBets = betsData?.map(bet => {
-            const market = bet.markets as { 
-              movie_id: string; 
-              type: string; 
-              timeframe: string; 
+          const transformedPendingBets = pendingBetsData?.map(bet => {
+            const market = bet.markets as unknown as {
+              movie_id: string;
+              type: string;
+              timeframe: string;
               status: string;
               movies: { slug: string; release_date: string; image_url: string };
             };
@@ -126,6 +157,7 @@ export default function Portfolio() {
               potential_payout: bet.potential_payout,
               status: bet.status,
               outcome: bet.outcome,
+              placed_at: bet.placed_at,
               market: {
                 movie_id: market?.movie_id || '',
                 type: market?.type || '',
@@ -140,7 +172,50 @@ export default function Portfolio() {
             };
           }) || [];
           
-          setUserBets(transformedBets);
+          setUserBets(transformedPendingBets);
+        }
+
+        if (historyBetsError) {
+          console.error('Error fetching history bets:', historyBetsError);
+        } else {
+          console.log('Raw history bets data:', historyBetsData);
+          console.log('Number of history bets found:', historyBetsData?.length || 0);
+          
+          // Transform the data to flatten the nested structure
+          const transformedHistoryBets = historyBetsData?.map(bet => {
+            const market = bet.markets as unknown as {
+              movie_id: string;
+              type: string;
+              timeframe: string;
+              status: string;
+              movies: { slug: string; release_date: string; image_url: string };
+            };
+            const movie = market?.movies;
+            
+            return {
+              id: bet.id,
+              market_id: bet.market_id,
+              selected_range: bet.selected_range,
+              points: bet.points,
+              potential_payout: bet.potential_payout,
+              status: bet.status,
+              outcome: bet.outcome,
+              placed_at: bet.placed_at,
+              market: {
+                movie_id: market?.movie_id || '',
+                type: market?.type || '',
+                timeframe: market?.timeframe || '',
+                status: market?.status || ''
+              },
+              movie: {
+                slug: movie?.slug || '',
+                release_date: movie?.release_date || '',
+                image_url: movie?.image_url || ''
+              }
+            };
+          }) || [];
+          
+          setHistoryBets(transformedHistoryBets);
         }
       } catch (error) {
         console.error('Error fetching portfolio data:', error);
@@ -242,11 +317,41 @@ export default function Portfolio() {
           </motion.div>
         </div>
 
-        {/* Pending Bets Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-            Pending Bets ({userBets.length})
-          </h2>
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-1 bg-white dark:bg-neutral-dark rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'pending'
+                  ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Activity className="h-4 w-4" />
+              <span>Pending Bets ({userBets.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'history'
+                  ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <History className="h-4 w-4" />
+              <span>Bet History ({historyBets.length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'pending' ? (
+          /* Pending Bets Section */
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+              Pending Bets ({userBets.length})
+            </h2>
           
           {loading ? (
             <div className="space-y-4">
@@ -351,6 +456,131 @@ export default function Portfolio() {
             </div>
           )}
         </div>
+        ) : (
+          /* History Section */
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+              Bet History ({historyBets.length})
+            </h2>
+            
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div className="animate-pulse">
+                      <div className="space-y-2">
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : historyBets.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-neutral-dark rounded-xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 text-center"
+              >
+                <History className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                  No Bet History
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  You haven&apos;t completed any bets yet. Your resolved bets will appear here!
+                </p>
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                {historyBets.map((bet, index) => (
+                  <motion.div
+                    key={bet.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start space-x-4">
+                      {/* Movie Poster */}
+                      <div className="relative w-16 h-24 flex-shrink-0">
+                        {bet.movie.image_url ? (
+                          <Image
+                            src={bet.movie.image_url}
+                            alt={bet.movie.slug}
+                            fill
+                            className="object-cover rounded-lg"
+                            sizes="64px"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                            <span className="text-xs text-slate-500">No Image</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bet Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Movie</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{bet.movie.slug}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Placed At</p>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {bet.placed_at ? new Date(bet.placed_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Market Type</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{bet.market.type}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Timeframe</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{bet.market.timeframe}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Selected Range</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{bet.selected_range}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Points</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{formatCurrency(bet.points)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Potential Payout</p>
+                            <p className="font-medium text-green-600 dark:text-green-400">{formatCurrency(bet.potential_payout)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Bet Status</p>
+                            <p className="font-medium text-slate-900 dark:text-white">{bet.status}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Outcome</p>
+                            <p className={`font-medium ${
+                              bet.outcome === 'won' ? 'text-green-600 dark:text-green-400' :
+                              bet.outcome === 'lost' ? 'text-red-600 dark:text-red-400' :
+                              'text-yellow-600 dark:text-yellow-400'
+                            }`}>
+                              {bet.outcome.charAt(0).toUpperCase() + bet.outcome.slice(1)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
