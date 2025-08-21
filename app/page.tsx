@@ -1,6 +1,7 @@
 import HeroCarousel from "@/components/HeroCarousel"; // your existing hero
 import MovieRow from "@/components/MovieRow";
 import SearchBar from "@/components/SearchBar";
+import Leaderboard from "@/components/Leaderboard";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function Home() {
@@ -37,7 +38,11 @@ export default async function Home() {
 
   return (
     <main className="px-4 py-6 max-w-7xl mx-auto">
-      <HeroCarousel />
+      {/* Hero Section with Leaderboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <HeroCarousel />
+        <Leaderboard />
+      </div>
 
       <div className="mt-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Upcoming & Trending</h1>
