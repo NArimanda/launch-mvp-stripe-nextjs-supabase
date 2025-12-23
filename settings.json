@@ -1,4 +1,4 @@
 {
   "mcp.enableLanguageServer": true,
-  "mcp.servers": ["stripe", "supabase"]
+  "mcp.servers": ["supabase"]
 } 

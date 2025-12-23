@@ -1,15 +1,5 @@
 {
   "mcpServers": {
-    "stripe": {
-      "command": "npx",
-      "args": [
-        "-y", 
-        "@stripe/mcp"
-      ],
-      "env": {
-        "STRIPE_SECRET_KEY": "your_stripe_test_key_here"
-      }
-    },
     "supabase": {
       "command": "npx",
       "args": [

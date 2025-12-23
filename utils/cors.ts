@@ -12,7 +12,7 @@ function getCorsHeaders(request: NextRequest) {
     'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, stripe-signature, x-client-info',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info',
     'Access-Control-Max-Age': '86400', // 24 hours
   };
 }

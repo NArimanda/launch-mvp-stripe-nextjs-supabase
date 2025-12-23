@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { BuyMeCoffee } from './BuyMeCoffee';
 import BalanceTracker from '@/contexts/BalanceTracker';
 
 // TopBar component handles user profile display and navigation
@@ -56,7 +55,6 @@ export default function TopBar() {
         <div className="flex items-center gap-4">
           {!user ? (
             <>
-              <BuyMeCoffee />
               {/* Show login button for unauthenticated users */}
               <Link
                 href="/login"
@@ -68,7 +66,6 @@ export default function TopBar() {
           ) : (
             // Show profile for authenticated users
             <>
-              <BuyMeCoffee />
 
               {pathname !== '/dashboard' && (
                 <button

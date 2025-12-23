@@ -1,7 +1,5 @@
 // File: /components/PricingSection.tsx
 
-// import Link from 'next/link';
-// import { StripeBuyButton } from './StripeBuyButton';
 import { motion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';

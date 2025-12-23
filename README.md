@@ -1,6 +1,6 @@
-# Next.js + Stripe + Supabase Production-Ready Template
+# Next.js + Supabase Production-Ready Template
 
-A production-ready Next.js template featuring authentication, dark mode support, Stripe integration, and a clean, modern UI. Built with TypeScript and Tailwind CSS.
+A production-ready Next.js template featuring authentication, dark mode support, and a clean, modern UI. Built with TypeScript and Tailwind CSS.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
@@ -13,12 +13,9 @@ A production-ready Next.js template featuring authentication, dark mode support,
 
 💡 Try the App: [App link](https://mvp.seanchen.io)
 
-☕️ Buy me a coffee: [Cafe Latte](https://buy.stripe.com/5kA176bA895ggog4gh)
-
 ## ✨ Features
 
 - 🔐 Authentication with Supabase
-- 💳 Stripe payment integration
 - 🌓 Dark mode support
 - 📱 Responsive design
 - 🎨 Tailwind CSS styling
@@ -35,7 +32,6 @@ A production-ready Next.js template featuring authentication, dark mode support,
 - Node.js 18+ 
 - npm or yarn
 - A Supabase account
-- A Stripe account
 - A Google Cloud Platform account
 
 ### Installation and Setup
@@ -76,15 +72,6 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 # OpenAI Configuration (you'll need to add your key)
 OPENAI_API_KEY=
-
-# Stripe Configuration
-# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_
-NEXT_PUBLIC_STRIPE_BUTTON_ID=buy_btn_
-# STRIPE_SECRET_KEY=sk_test_
-STRIPE_SECRET_KEY=sk_live_
-# STRIPE_WEBHOOK_SECRET=whsec_
-STRIPE_WEBHOOK_SECRET=whsec_
 
 # ANALYTICS
 NEXT_PUBLIC_POSTHOG_KEY=
@@ -136,24 +123,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
         FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
       ```
 
-6. Set up Stripe:
-   
-   a. Create a live account and configure:
-      - Create product in Product Catalog
-      - Create promotional coupon codes
-      - Set up Payment Link with trial period
-   
-   b. Get required keys:
-      - Publishable Key → NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-      - Secret Key → STRIPE_SECRET_KEY
-      - Buy Button ID → NEXT_PUBLIC_STRIPE_BUTTON_ID
-   
-   c. Configure webhooks:
-      - Add endpoint: your_url/api/stripe/webhook
-      - Subscribe to events: customer.subscription.*, checkout.session.*, invoice.*, payment_intent.*
-      - Copy Signing Secret → STRIPE_WEBHOOK_SECRET
-
-8. Start the development server:
+6. Start the development server:
 ```bash
 npm run dev
 ```
@@ -168,7 +138,7 @@ yarn dev
 
 ### What is MCP?
 
-MCP (Model Control Protocol) enables enhanced AI assistant capabilities for this project, allowing the AI to interact directly with your Stripe and Supabase accounts to help with debugging, configuring, and managing your application.
+MCP (Model Control Protocol) enables enhanced AI assistant capabilities for this project, allowing the AI to interact directly with your Supabase account to help with debugging, configuring, and managing your application.
 
 For a comprehensive demonstration of MCP capabilities, check out our dedicated demo repository:
 - 🔗 [launch-mcp-demo](https://github.com/ShenSeanChen/launch-mcp-demo) - Collection of powerful MCP tools
@@ -187,11 +157,7 @@ For a comprehensive demonstration of MCP capabilities, check out our dedicated d
 
 2. Configure your credentials:
 
-   a. Stripe Integration:
-      - Get your Stripe API key from the Stripe Dashboard
-      - Replace `your_stripe_test_key_here` with your actual test key
-
-   b. Supabase Integration:
+   a. Supabase Integration:
       - Generate a Supabase access token from your Supabase dashboard (Project Settings > API)
       - Replace `your_supabase_access_token_here` with your actual token
 
@@ -204,16 +170,6 @@ For a comprehensive demonstration of MCP capabilities, check out our dedicated d
    ```json
    {
      "mcpServers": {
-       "stripe": {
-         "command": "npx",
-         "args": [
-           "-y", 
-           "@stripe/mcp"
-         ],
-         "env": {
-           "STRIPE_SECRET_KEY": "sk_test_51ABC123..."
-         }
-       },
        "supabase": {
          "command": "npx",
          "args": [
@@ -230,7 +186,6 @@ For a comprehensive demonstration of MCP capabilities, check out our dedicated d
 4. Using MCP with AI assistants:
    
    After configuring `mcp.json`, the AI assistant within the Cursor editor will be able to:
-   - Query and manage your Stripe subscriptions
    - Interact with your Supabase database
    - Help troubleshoot integration issues
    - Provide contextual help based on your actual configuration
@@ -243,7 +198,7 @@ For a comprehensive demonstration of MCP capabilities, check out our dedicated d
 
 ### Extending MCP with Additional Tools
 
-The MCP framework can be extended with various tools beyond Stripe and Supabase. Our [launch-mcp-demo](https://github.com/ShenSeanChen/launch-mcp-demo) repository demonstrates how to integrate basic MCP examples.
+The MCP framework can be extended with various tools beyond Supabase. Our [launch-mcp-demo](https://github.com/ShenSeanChen/launch-mcp-demo) repository demonstrates how to integrate basic MCP examples.
 
 To integrate these additional tools with your project:
 
@@ -258,9 +213,6 @@ To integrate these additional tools with your project:
    ```json
    {
      "mcpServers": {
-       "stripe": {
-         // Your existing Stripe configuration
-       },
        "supabase": {
          // Your existing Supabase configuration
        },
@@ -295,12 +247,10 @@ These additional tools can help enhance your development workflow and provide mo
 ```
 ├── app/                  # Next.js 14 app directory
 │   ├── api/              # API routes
-│   │   ├── stripe/       # Stripe payment endpoints
 │   │   └── user/         # User API endpoints
 │   ├── auth/             # Auth-related pages
 │   │   ├── callback/     # handle auth callback
 │   ├── dashboard/        # Dashboard pages
-│   ├── pay/              # Payment pages
 │   ├── profile/          # User profile pages
 │   ├── reset-password/   # Reset password pages
 │   ├── update-password/  # Update password pages
@@ -325,7 +275,6 @@ These additional tools can help enhance your development workflow and provide mo
 - [TypeScript](https://www.typescriptlang.org/) - Type safety
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [Supabase](https://supabase.com/) - Authentication & Database
-- [Stripe](https://stripe.com/) - Payments
 - [Framer Motion](https://www.framer.com/motion/) - Animations
 
 ## 🔧 Configuration
@@ -346,14 +295,6 @@ Authentication is handled through Supabase with support for:
 - Magic Links
 - Password Reset
 
-### Payment Integration
-
-Stripe integration includes:
-- Subscription management
-- Trial periods
-- Webhook handling
-- Payment status tracking
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -372,7 +313,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Vercel for the deployment platform
 - Tailwind CSS team for the utility-first CSS framework
 - Supabase team for the backend platform
-- Stripe team for the payment infrastructure
 - Cursor team for the AI-powered editor and MCP capabilities
 - Anthropic for Claude AI and Claude Desktop integration
 - MCP framework developers for enabling extended AI capabilities

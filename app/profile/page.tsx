@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccountManagement } from '@/components/AccountManagement';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -11,16 +11,6 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 function ProfileContent() {
   const { user } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const paymentStatus = searchParams.get('payment');
-
-  // Show payment success message if redirected from successful payment
-  useEffect(() => {
-    if (paymentStatus === 'success') {
-      // Could add a toast notification here
-      console.log('Payment successful!');
-    }
-  }, [paymentStatus]);
 
   // Add useEffect for auth check
   useEffect(() => {
