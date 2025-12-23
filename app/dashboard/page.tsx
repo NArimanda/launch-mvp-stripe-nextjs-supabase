@@ -31,6 +31,7 @@ interface UserBet {
     type: string;
     timeframe: string;
     status: string;
+    outcome?: number | null;
   };
   movie: {
     slug: string;
@@ -106,6 +107,7 @@ export default function Portfolio() {
           .eq('outcome', 'pending');
 
         // Fetch user's history bets (non-pending) with market and movie info
+        // Note: Using markets() instead of markets!inner() to ensure outcome is included even if null
         const { data: historyBetsData, error: historyBetsError } = await supabase
           .from('bets')
           .select(`
@@ -117,12 +119,14 @@ export default function Portfolio() {
             status, 
             outcome,
             placed_at,
-            markets!inner(
+            markets(
+              id,
               movie_id,
               type,
               timeframe,
               status,
-              movies!inner(
+              outcome,
+              movies(
                 slug,
                 release_date,
                 image_url
@@ -184,16 +188,45 @@ export default function Portfolio() {
           console.log('Raw history bets data:', historyBetsData);
           console.log('Number of history bets found:', historyBetsData?.length || 0);
           
+          // First, collect all unique market_ids to fetch outcomes separately if needed
+          const marketIds = [...new Set(historyBetsData?.map(bet => bet.market_id) || [])];
+          console.log('Market IDs to check:', marketIds);
+          
+          // Fetch market outcomes separately to ensure we get them
+          const { data: marketsData, error: marketsError } = await supabase
+            .from('markets')
+            .select('id, outcome')
+            .in('id', marketIds);
+          
+          console.log('Markets data with outcomes:', marketsData);
+          console.log('Markets error:', marketsError);
+          
+          // Create a map of market_id -> outcome for quick lookup
+          const outcomeMap = new Map(
+            marketsData?.map(m => [m.id, m.outcome]) || []
+          );
+          
           // Transform the data to flatten the nested structure
           const transformedHistoryBets = historyBetsData?.map(bet => {
-            const market = bet.markets as unknown as {
-              movie_id: string;
-              type: string;
-              timeframe: string;
-              status: string;
-              movies: { slug: string; release_date: string; image_url: string };
-            };
-            const movie = market?.movies;
+            // Handle both array and object cases for markets
+            const marketsData = Array.isArray(bet.markets) ? bet.markets[0] : bet.markets;
+            
+            const market = marketsData as any;
+            
+            // Handle movies - could be array or object
+            const moviesData = Array.isArray(market?.movies) ? market.movies[0] : market?.movies;
+            const movie = moviesData || {};
+            
+            // Try to get outcome from the market object first, then fallback to the map
+            let marketOutcome = market?.outcome;
+            if (marketOutcome === undefined || marketOutcome === null) {
+              marketOutcome = outcomeMap.get(bet.market_id) ?? null;
+            }
+            
+            console.log(`Bet ${bet.id} - Market ID: ${bet.market_id}`);
+            console.log(`  Market object outcome:`, market?.outcome);
+            console.log(`  Outcome from map:`, outcomeMap.get(bet.market_id));
+            console.log(`  Final outcome:`, marketOutcome);
             
             return {
               id: bet.id,
@@ -205,10 +238,12 @@ export default function Portfolio() {
               outcome: bet.outcome,
               placed_at: bet.placed_at,
               market: {
+                id: market?.id || '',
                 movie_id: market?.movie_id || '',
                 type: market?.type || '',
                 timeframe: market?.timeframe || '',
-                status: market?.status || ''
+                status: market?.status || '',
+                outcome: marketOutcome !== null && marketOutcome !== undefined ? Number(marketOutcome) : null
               },
               movie: {
                 slug: movie?.slug || '',
@@ -217,6 +252,8 @@ export default function Portfolio() {
               }
             };
           }) || [];
+          
+          console.log('Transformed history bets:', transformedHistoryBets);
           
           setHistoryBets(transformedHistoryBets);
         }
@@ -566,13 +603,24 @@ export default function Portfolio() {
                             <p className="font-medium text-slate-900 dark:text-white">{bet.status}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Outcome</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Bet Result</p>
                             <p className={`font-medium ${
                               bet.outcome === 'won' ? 'text-green-600 dark:text-green-400' :
                               bet.outcome === 'lost' ? 'text-red-600 dark:text-red-400' :
                               'text-yellow-600 dark:text-yellow-400'
                             }`}>
                               {bet.outcome.charAt(0).toUpperCase() + bet.outcome.slice(1)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Box Office Outcome</p>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {bet.market.outcome !== null && bet.market.outcome !== undefined 
+                                ? (() => {
+                                    const valueInMillions = Number(bet.market.outcome) / 1000000;
+                                    return `$${valueInMillions.toFixed(1)}M`;
+                                  })()
+                                : 'N/A'}
                             </p>
                           </div>
                         </div>
