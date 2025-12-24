@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import MovieCommentsList from "@/components/comments/MovieCommentsList";
 
 function normalizeSlug(input: string) {
   const s = decodeURIComponent(input)
@@ -108,6 +109,8 @@ export default async function MoviePage({ params }: { params: { slug: string } }
           </div>
         </div>
       </section>
+
+      <MovieCommentsList movieId={movie.id} mode="public" />
     </div>
   );
 }

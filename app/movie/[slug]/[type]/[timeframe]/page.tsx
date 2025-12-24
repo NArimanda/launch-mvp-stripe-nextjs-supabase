@@ -4,6 +4,7 @@ import Link from "next/link";
 import { buildBinsForMarket } from "@/lib/binPresets";
 import MarketContentWrapper from "@/components/MarketContentWrapper";
 import CountdownTimer from "@/components/CountdownTimer";
+import MovieCommentsList from "@/components/comments/MovieCommentsList";
 
 type BetRow = { selected_bin_id: string | null; side: boolean | null; points: number | null };
 
@@ -119,6 +120,8 @@ export default async function MarketPage({
       </div>
 
       <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} type={type} timeframe={timeframe} marketStatus={market.status} />
+
+      <MovieCommentsList movieId={movie.id} mode="public" />
     </div>
   );
 }
