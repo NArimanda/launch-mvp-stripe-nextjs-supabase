@@ -5,7 +5,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") || "").trim();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   let query = supabase
     .from("movies")
     .select("id,slug,title,image_url,release_date")

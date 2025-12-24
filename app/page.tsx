@@ -5,7 +5,7 @@ import Leaderboard from "@/components/Leaderboard";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function Home() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: upcoming10 } = await supabase

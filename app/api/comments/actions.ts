@@ -1,0 +1,92 @@
+'use server';
+
+import { createClient } from '@/utils/supabase/server';
+import { supabaseAdmin } from '@/utils/supabase-admin';
+import { revalidatePath } from 'next/cache';
+
+async function checkAdmin(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) {
+    return false;
+  }
+
+  return data.is_admin === true;
+}
+
+export async function approveCommentAction(commentId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  // Get current user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: 'Not authenticated' };
+  }
+
+  // Check admin status
+  const isAdmin = await checkAdmin(user.id);
+  if (!isAdmin) {
+    return { error: 'Not authorized' };
+  }
+
+  // Approve the comment using admin client to bypass RLS
+  const { error: updateError } = await supabaseAdmin
+    .from('movie_comments')
+    .update({
+      approved: true,
+      approved_at: new Date().toISOString(),
+      approved_by: user.id,
+    })
+    .eq('id', commentId);
+
+  if (updateError) {
+    console.error('Error approving comment:', updateError);
+    return { error: updateError.message };
+  }
+
+  // Revalidate any pages that might show this comment
+  // Revalidate admin page and movie pages
+  revalidatePath('/admin/comments');
+  // Note: We can't revalidate dynamic movie paths without the movieId, but the client will refresh
+  return {};
+}
+
+export async function deleteCommentAction(commentId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  // Get current user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: 'Not authenticated' };
+  }
+
+  // Check admin status
+  const isAdmin = await checkAdmin(user.id);
+  if (!isAdmin) {
+    return { error: 'Not authorized' };
+  }
+
+  // Delete the comment using admin client to bypass RLS
+  const { error: deleteError } = await supabaseAdmin
+    .from('movie_comments')
+    .delete()
+    .eq('id', commentId);
+
+  if (deleteError) {
+    console.error('Error deleting comment:', deleteError);
+    return { error: deleteError.message };
+  }
+
+  // Revalidate admin page and movie pages
+  revalidatePath('/admin/comments');
+  // Note: We can't revalidate dynamic movie paths without the movieId, but the client will refresh
+  return {};
+}
+

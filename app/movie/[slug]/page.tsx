@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import MovieCommentsList from "@/components/comments/MovieCommentsList";
+import MovieComments from "@/components/comments/MovieComments";
 
 function normalizeSlug(input: string) {
   const s = decodeURIComponent(input)
@@ -12,10 +12,11 @@ function normalizeSlug(input: string) {
   return s;
 }
 
-export default async function MoviePage({ params }: { params: { slug: string } }) {
-  const supabase = createClient();
+export default async function MoviePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const supabase = await createClient();
 
-  const raw = normalizeSlug(params.slug);
+  const raw = normalizeSlug(slug);
   const candidateSlugs = Array.from(new Set([
     raw,
     raw.replace(/-/g, ' '),   // handle links that used hyphens
@@ -110,7 +111,7 @@ export default async function MoviePage({ params }: { params: { slug: string } }
         </div>
       </section>
 
-      <MovieCommentsList movieId={movie.id} mode="public" />
+      <MovieComments movieId={movie.id} />
     </div>
   );
 }

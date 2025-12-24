@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/utils/supabase';
 
 export function AccountManagement() {
   const { user, deleteAccount } = useAuth();
@@ -8,9 +9,43 @@ export function AccountManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [loadingAdmin, setLoadingAdmin] = useState(true);
 
   // Check if user signed in with OAuth
   const isOAuthUser = user?.app_metadata?.provider === 'google';
+
+  // Fetch admin status
+  useEffect(() => {
+    const fetchAdminStatus = async () => {
+      if (!user?.id) {
+        setLoadingAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching admin status:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data?.is_admin === true);
+        }
+      } catch (err) {
+        console.error('Error fetching admin status:', err);
+        setIsAdmin(false);
+      } finally {
+        setLoadingAdmin(false);
+      }
+    };
+
+    fetchAdminStatus();
+  }, [user?.id]);
 
   const handleDeleteAccount = async () => {
     if (!user?.id) return;
@@ -39,6 +74,16 @@ export function AccountManagement() {
         <p><span className="font-medium">Email:</span> {user?.email}</p>
         <p><span className="font-medium">Last Sign In:</span> {new Date(user?.last_sign_in_at || '').toLocaleString()}</p>
         <p><span className="font-medium">Account Type:</span> {isOAuthUser ? 'Google Account' : 'Email Account'}</p>
+        <p>
+          <span className="font-medium">Admin Status:</span>{' '}
+          {loadingAdmin ? (
+            <span className="text-slate-500 dark:text-slate-400">Loading...</span>
+          ) : (
+            <span className={isAdmin ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-slate-600 dark:text-slate-400'}>
+              {isAdmin ? 'True' : 'False'}
+            </span>
+          )}
+        </p>
       </div>
       
       <div className="space-y-2">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { buildBinsForMarket } from "@/lib/binPresets";
 import MarketContentWrapper from "@/components/MarketContentWrapper";
 import CountdownTimer from "@/components/CountdownTimer";
-import MovieCommentsList from "@/components/comments/MovieCommentsList";
+import MovieComments from "@/components/comments/MovieComments";
 
 type BetRow = { selected_bin_id: string | null; side: boolean | null; points: number | null };
 
@@ -38,12 +38,11 @@ function formatTypeTitle(t: string) {
 export default async function MarketPage({
   params,
 }: {
-  params: { slug: string; type: "domestic" | "worldwide"; timeframe: "opening-day" | "weekend" | "week" | "month" };
+  params: Promise<{ slug: string; type: "domestic" | "worldwide"; timeframe: "opening-day" | "weekend" | "week" | "month" }>;
 }) {
-  const supabase = createClient();
-  const raw = normalizeSlug(params.slug);
-  const type = params.type;
-  const timeframe = params.timeframe;
+  const { slug, type, timeframe } = await params;
+  const supabase = await createClient();
+  const raw = normalizeSlug(slug);
 
   // validate params
   const validTypes = ["domestic", "worldwide"] as const;
@@ -121,7 +120,7 @@ export default async function MarketPage({
 
       <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} type={type} timeframe={timeframe} marketStatus={market.status} />
 
-      <MovieCommentsList movieId={movie.id} mode="public" />
+      <MovieComments movieId={movie.id} />
     </div>
   );
 }

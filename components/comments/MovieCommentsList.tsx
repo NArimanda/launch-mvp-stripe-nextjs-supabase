@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
-import { MessageSquare, Reply, Quote } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { MessageSquare, Reply, Quote, Check, Trash2 } from 'lucide-react';
+import { approveCommentAction, deleteCommentAction } from '@/app/api/comments/actions';
 
 interface Comment {
   id: string;
@@ -13,11 +16,20 @@ interface Comment {
   approved: boolean;
   created_at: string;
   username?: string;
+  isPending?: boolean;
+  position_market_type?: string | null;
+  position_selected_range?: string | null;
+  position_points?: number | null;
 }
 
 interface MovieCommentsListProps {
   movieId: string;
   mode?: 'public' | 'admin';
+  pendingComments?: Comment[];
+  onReply?: (commentId: string) => void;
+  onQuote?: (commentId: string) => void;
+  renderQuoteReferences?: (text: string) => React.ReactNode;
+  isAdmin?: boolean;
 }
 
 function formatDate(dateString: string): string {
@@ -64,18 +76,55 @@ function formatDate(dateString: string): string {
 function CommentCard({ 
   comment, 
   replies, 
-  depth = 0 
+  depth = 0,
+  onReply,
+  onQuote,
+  renderQuoteReferences,
+  isAdmin = false,
+  onRefresh
 }: { 
   comment: Comment; 
   replies: Comment[]; 
   depth?: number;
+  onReply?: (commentId: string) => void;
+  onQuote?: (commentId: string) => void;
+  renderQuoteReferences?: (text: string) => React.ReactNode;
+  isAdmin?: boolean;
+  onRefresh?: () => void;
 }) {
-  const indentAmount = Math.min(depth * 4, 16);
-  const indentClass = depth > 0 ? `ml-${indentAmount}` : '';
-  
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleApprove = async () => {
+    setActionLoading('approve');
+    const result = await approveCommentAction(comment.id);
+    if (result.error) {
+      alert(`Failed to approve comment: ${result.error}`);
+    } else {
+      onRefresh?.();
+    }
+    setActionLoading(null);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+    setActionLoading('delete');
+    const result = await deleteCommentAction(comment.id);
+    if (result.error) {
+      alert(`Failed to delete comment: ${result.error}`);
+    } else {
+      onRefresh?.();
+    }
+    setActionLoading(null);
+  };
   return (
     <div className={`${depth > 0 ? 'mt-4 border-l-2 border-slate-200 dark:border-slate-700 pl-4' : ''}`}>
-      <div className="bg-white dark:bg-neutral-dark rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className={`bg-white dark:bg-neutral-dark rounded-lg p-4 shadow-sm border ${
+        comment.isPending 
+          ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/10' 
+          : 'border-slate-200 dark:border-slate-700'
+      }`}>
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-900 dark:text-white">
@@ -84,34 +133,82 @@ function CommentCard({
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {formatDate(comment.created_at)}
             </span>
+            {comment.isPending && (
+              <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded">
+                Pending approval
+              </span>
+            )}
           </div>
         </div>
         
-        <p className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap">
-          {comment.body}
-        </p>
+        <div className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap">
+          {renderQuoteReferences ? renderQuoteReferences(comment.body) : comment.body}
+        </div>
         
-        <div className="flex items-center gap-4">
-          <button
-            className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-            onClick={() => {
-              // Non-functional for now
-              console.log('Reply to comment:', comment.id);
-            }}
-          >
-            <Reply className="h-4 w-4" />
-            Reply
-          </button>
-          <button
-            className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-            onClick={() => {
-              // Non-functional for now
-              console.log('Quote comment:', comment.id);
-            }}
-          >
-            <Quote className="h-4 w-4" />
-            Quote
-          </button>
+        {/* Position Snapshot Display */}
+        {comment.position_market_type && comment.position_selected_range && typeof comment.position_points === 'number' && (
+          <div className="mb-3 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded px-2 py-1 inline-block">
+            Position: <span className="font-medium capitalize">{comment.position_market_type}</span> | <span className="font-medium">{comment.position_selected_range}</span> | <span className="font-medium">{comment.position_points.toLocaleString()}</span> pts
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 flex-wrap">
+          {!comment.isPending && (
+            <>
+              {onReply && (
+                <button
+                  className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                  onClick={() => onReply(comment.id)}
+                >
+                  <Reply className="h-4 w-4" />
+                  Reply
+                </button>
+              )}
+              {onQuote && (
+                <button
+                  className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                  onClick={() => onQuote(comment.id)}
+                >
+                  <Quote className="h-4 w-4" />
+                  Quote
+                </button>
+              )}
+            </>
+          )}
+          {isAdmin && (
+            <>
+              {comment.isPending || !comment.approved ? (
+                <button
+                  onClick={handleApprove}
+                  disabled={actionLoading !== null}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {actionLoading === 'approve' ? (
+                    'Approving...'
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Approve
+                    </>
+                  )}
+                </button>
+              ) : null}
+              <button
+                onClick={handleDelete}
+                disabled={actionLoading !== null}
+                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {actionLoading === 'delete' ? (
+                  'Deleting...'
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
       
@@ -124,6 +221,11 @@ function CommentCard({
               comment={reply}
               replies={[]}
               depth={depth + 1}
+              onReply={onReply}
+              onQuote={onQuote}
+              renderQuoteReferences={renderQuoteReferences}
+              isAdmin={isAdmin}
+              onRefresh={onRefresh}
             />
           ))}
         </div>
@@ -132,13 +234,30 @@ function CommentCard({
   );
 }
 
-export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCommentsListProps) {
+export default function MovieCommentsList({ 
+  movieId, 
+  mode = 'public',
+  pendingComments = [],
+  onReply,
+  onQuote,
+  renderQuoteReferences,
+  isAdmin = false
+}: MovieCommentsListProps) {
+  const { user } = useAuth();
+  const router = useRouter();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+    router.refresh();
+  };
 
   useEffect(() => {
     const fetchComments = async () => {
+      setLoading(true);
       try {
         setLoading(true);
         setError(null);
@@ -146,7 +265,7 @@ export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCom
         // Try to use v_movie_comments view first, fallback to joining tables
         let query = supabase
           .from('v_movie_comments')
-          .select('*')
+          .select('id, movie_id, user_id, parent_id, body, approved, created_at, username, position_market_type, position_selected_range, position_points')
           .eq('movie_id', movieId);
         
         // Add approved filter for public mode
@@ -171,6 +290,9 @@ export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCom
               body,
               approved,
               created_at,
+              position_market_type,
+              position_selected_range,
+              position_points,
               users(username)
             `)
             .eq('movie_id', movieId);
@@ -199,7 +321,10 @@ export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCom
               body: comment.body,
               approved: comment.approved,
               created_at: comment.created_at,
-              username: user?.username || null
+              username: user?.username || null,
+              position_market_type: comment.position_market_type || null,
+              position_selected_range: comment.position_selected_range || null,
+              position_points: comment.position_points || null
             };
           });
 
@@ -214,7 +339,10 @@ export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCom
             body: c.body,
             approved: c.approved,
             created_at: c.created_at,
-            username: c.username || null
+            username: c.username || null,
+            position_market_type: c.position_market_type || null,
+            position_selected_range: c.position_selected_range || null,
+            position_points: c.position_points || null
           })));
         }
       } catch (err) {
@@ -259,7 +387,13 @@ export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCom
     return rootComments;
   };
 
-  const threadedComments = buildThreads(comments);
+  // Merge approved comments with pending comments (only show pending for current user)
+  const allComments = [
+    ...comments,
+    ...(user ? pendingComments.filter(c => c.user_id === user.id) : [])
+  ];
+
+  const threadedComments = buildThreads(allComments);
 
   if (loading) {
     return (
@@ -311,6 +445,11 @@ export default function MovieCommentsList({ movieId, mode = 'public' }: MovieCom
               comment={comment}
               replies={comment.replies}
               depth={0}
+              onReply={onReply}
+              onQuote={onQuote}
+              renderQuoteReferences={renderQuoteReferences}
+              isAdmin={isAdmin}
+              onRefresh={handleRefresh}
             />
           ))}
         </div>
