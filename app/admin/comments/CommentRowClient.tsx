@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useFormStatus, useFormState } from 'react-dom';
+import { approveComment, deleteComment } from './actions';
 
 interface Comment {
   id: string;
@@ -24,20 +24,73 @@ interface Comment {
 interface CommentRowClientProps {
   comment: Comment;
   isPending: boolean;
-  onApprove: (id: string) => Promise<{ error?: string }>;
-  onDelete: (id: string) => Promise<{ error?: string }>;
+}
+
+function ApproveButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+    >
+      {pending ? 'Approving...' : 'Approve'}
+    </button>
+  );
+}
+
+function DeleteButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+    >
+      {pending ? 'Deleting...' : 'Delete'}
+    </button>
+  );
+}
+
+function DeleteForm({ commentId }: { commentId: string }) {
+  const [state, formAction] = useFormState(deleteComment, null);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+      e.preventDefault();
+      return;
+    }
+  };
+
+  return (
+    <form action={formAction} onSubmit={handleSubmit}>
+      <input type="hidden" name="commentId" value={commentId} />
+      {state && (
+        <div className="text-red-600 text-xs mb-1">{state}</div>
+      )}
+      <DeleteButton />
+    </form>
+  );
+}
+
+function ApproveForm({ commentId }: { commentId: string }) {
+  const [state, formAction] = useFormState(approveComment, null);
+
+  return (
+    <form action={formAction}>
+      <input type="hidden" name="commentId" value={commentId} />
+      {state && (
+        <div className="text-red-600 text-xs mb-1">{state}</div>
+      )}
+      <ApproveButton />
+    </form>
+  );
 }
 
 export default function CommentRowClient({
   comment,
   isPending,
-  onApprove,
-  onDelete,
 }: CommentRowClientProps) {
-  const router = useRouter();
-  const [isPendingAction, startTransition] = useTransition();
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -46,34 +99,6 @@ export default function CommentRowClient({
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
-  };
-
-  const handleApprove = () => {
-    setActionLoading('approve');
-    startTransition(async () => {
-      const result = await onApprove(comment.id);
-      if (result.error) {
-        alert(`Failed to approve comment: ${result.error}`);
-      }
-      setActionLoading(null);
-      router.refresh();
-    });
-  };
-
-  const handleDelete = () => {
-    if (!confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
-
-    setActionLoading('delete');
-    startTransition(async () => {
-      const result = await onDelete(comment.id);
-      if (result.error) {
-        alert(`Failed to delete comment: ${result.error}`);
-      }
-      setActionLoading(null);
-      router.refresh();
     });
   };
 
@@ -116,7 +141,7 @@ export default function CommentRowClient({
               Reply to comment: {comment.parent_id.substring(0, 8)}...
             </div>
           )}
-          {comment.position_market_type && comment.position_selected_range && comment.position_points !== null && (
+          {comment.position_market_type && comment.position_selected_range && comment.position_points !== null && comment.position_points !== undefined && (
             <div className="text-xs text-slate-600 dark:text-slate-400 mb-2 bg-slate-50 dark:bg-slate-700 rounded px-2 py-1 inline-block">
               Position: <span className="font-medium capitalize">{comment.position_market_type}</span> |{' '}
               <span className="font-medium">{comment.position_selected_range}</span> |{' '}
@@ -126,21 +151,9 @@ export default function CommentRowClient({
         </div>
         <div className="flex items-center gap-2 ml-4">
           {isPending && (
-            <button
-              onClick={handleApprove}
-              disabled={isPendingAction || actionLoading !== null}
-              className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {actionLoading === 'approve' ? 'Approving...' : 'Approve'}
-            </button>
+            <ApproveForm commentId={comment.id} />
           )}
-          <button
-            onClick={handleDelete}
-            disabled={isPendingAction || actionLoading !== null}
-            className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {actionLoading === 'delete' ? 'Deleting...' : 'Delete'}
-          </button>
+          <DeleteForm commentId={comment.id} />
         </div>
       </div>
       <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
@@ -149,4 +162,3 @@ export default function CommentRowClient({
     </div>
   );
 }
-

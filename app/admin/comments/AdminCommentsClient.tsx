@@ -47,7 +47,8 @@ export default function AdminCommentsClient({
   const handleApprove = async (commentId: string) => {
     setActionLoading(commentId);
     startTransition(async () => {
-      const result = await approveComment(commentId, debugInfo.authUserId);
+      const result = await approveComment(commentId);
+      alert(JSON.stringify(result));
       if (result.error) {
         alert(`Failed to approve comment: ${result.error}`);
       }
@@ -63,7 +64,7 @@ export default function AdminCommentsClient({
 
     setActionLoading(commentId);
     startTransition(async () => {
-      const result = await deleteComment(commentId, debugInfo.authUserId);
+      const result = await deleteComment(commentId);
       if (result.error) {
         alert(`Failed to delete comment: ${result.error}`);
       }

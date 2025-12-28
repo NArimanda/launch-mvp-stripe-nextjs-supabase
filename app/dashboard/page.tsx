@@ -41,6 +41,7 @@ interface UserBet {
 }
 
 export default function Portfolio() {
+  console.log('[DASHBOARD] Portfolio component rendering');
   const { user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
@@ -63,8 +64,6 @@ export default function Portfolio() {
 
     const fetchPortfolioData = async () => {
       try {
-        console.log("Fetching portfolio data for user:", user.id);
-
         // Fetch user balance
         const { data: walletData, error: walletError } = await supabase
           .from('wallets')
@@ -75,7 +74,6 @@ export default function Portfolio() {
         if (walletError) {
           console.error('Error fetching wallet:', walletError);
         } else {
-          console.log('Wallet data:', walletData);
           setBalance(walletData?.balance || 0);
         }
 
@@ -137,14 +135,9 @@ export default function Portfolio() {
           .neq('outcome', 'pending')
           .order('placed_at', { ascending: false });
 
-        console.log('Bets query result:', { pendingBetsData, historyBetsData });
-
         if (pendingBetsError) {
           console.error('Error fetching pending bets:', pendingBetsError);
         } else {
-          console.log('Raw pending bets data:', pendingBetsData);
-          console.log('Number of pending bets found:', pendingBetsData?.length || 0);
-          
           // Transform the data to flatten the nested structure
           const transformedPendingBets = pendingBetsData?.map(bet => {
             const market = bet.markets as unknown as {
@@ -185,21 +178,14 @@ export default function Portfolio() {
         if (historyBetsError) {
           console.error('Error fetching history bets:', historyBetsError);
         } else {
-          console.log('Raw history bets data:', historyBetsData);
-          console.log('Number of history bets found:', historyBetsData?.length || 0);
-          
           // First, collect all unique market_ids to fetch outcomes separately if needed
           const marketIds = [...new Set(historyBetsData?.map(bet => bet.market_id) || [])];
-          console.log('Market IDs to check:', marketIds);
           
           // Fetch market outcomes separately to ensure we get them
           const { data: marketsData, error: marketsError } = await supabase
             .from('markets')
             .select('id, outcome')
             .in('id', marketIds);
-          
-          console.log('Markets data with outcomes:', marketsData);
-          console.log('Markets error:', marketsError);
           
           // Create a map of market_id -> outcome for quick lookup
           const outcomeMap = new Map(
@@ -222,11 +208,6 @@ export default function Portfolio() {
             if (marketOutcome === undefined || marketOutcome === null) {
               marketOutcome = outcomeMap.get(bet.market_id) ?? null;
             }
-            
-            console.log(`Bet ${bet.id} - Market ID: ${bet.market_id}`);
-            console.log(`  Market object outcome:`, market?.outcome);
-            console.log(`  Outcome from map:`, outcomeMap.get(bet.market_id));
-            console.log(`  Final outcome:`, marketOutcome);
             
             return {
               id: bet.id,
@@ -252,8 +233,6 @@ export default function Portfolio() {
               }
             };
           }) || [];
-          
-          console.log('Transformed history bets:', transformedHistoryBets);
           
           setHistoryBets(transformedHistoryBets);
         }

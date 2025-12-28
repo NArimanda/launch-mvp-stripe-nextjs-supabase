@@ -62,7 +62,21 @@ const nextConfig: NextConfig = {
       ],
     },
   ],
-  /* config options here */
+  webpack: (config, { dev, isServer }) => {
+    // Ignore punycode warnings
+    config.ignoreWarnings = [
+      { module: /node_modules\/punycode/ },
+    ];
+    
+    // Use filesystem cache instead of memory cache to prevent allocation errors
+    if (dev) {
+      config.cache = {
+        type: 'filesystem',
+      };
+    }
+    
+    return config;
+  },
 };
 
 export default nextConfig;

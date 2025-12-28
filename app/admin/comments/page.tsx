@@ -1,6 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
-import { approveComment, deleteComment } from './actions';
 import CommentRowClient from './CommentRowClient';
 
 interface Comment {
@@ -26,6 +25,8 @@ export default async function AdminCommentsPage() {
 
   // Get auth user
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+  console.log('PAGE USER:', authUser?.id);
 
   if (authError || !authUser) {
     return (
@@ -161,11 +162,10 @@ export default async function AdminCommentsPage() {
         ) : (
           <div className="space-y-4">
             {pendingComments.map((comment) => (
-              <CommentRow
+              <CommentRowClient
                 key={comment.id}
                 comment={comment}
                 isPending={true}
-                userId={authUser.id}
               />
             ))}
           </div>
@@ -182,44 +182,15 @@ export default async function AdminCommentsPage() {
         ) : (
           <div className="space-y-4">
             {approvedComments.map((comment) => (
-              <CommentRow
+              <CommentRowClient
                 key={comment.id}
                 comment={comment}
                 isPending={false}
-                userId={authUser.id}
               />
             ))}
           </div>
         )}
       </section>
     </div>
-  );
-}
-
-function CommentRow({
-  comment,
-  isPending,
-  userId,
-}: {
-  comment: Comment;
-  isPending: boolean;
-  userId: string;
-}) {
-  // Create wrapper functions that include user_id
-  const handleApprove = async (commentId: string) => {
-    return await approveComment(commentId, userId);
-  };
-
-  const handleDelete = async (commentId: string) => {
-    return await deleteComment(commentId, userId);
-  };
-
-  return (
-    <CommentRowClient
-      comment={comment}
-      isPending={isPending}
-      onApprove={handleApprove}
-      onDelete={handleDelete}
-    />
   );
 }

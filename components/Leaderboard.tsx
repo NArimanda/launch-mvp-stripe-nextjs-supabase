@@ -16,8 +16,6 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        console.log('Fetching leaderboard data...');
-        
         const response = await fetch('/api/leaderboard');
         const data = await response.json();
 
@@ -26,7 +24,6 @@ export default function Leaderboard() {
           return;
         }
 
-        console.log('Leaderboard data:', data.players);
         setPlayers(data.players || []);
       } catch (error) {
         console.error('Error fetching leaderboard:', error);

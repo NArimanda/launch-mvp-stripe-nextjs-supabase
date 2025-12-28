@@ -38,47 +38,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    console.log("AuthContext - mounted useEffect:", mounted);
     
     const initializeAuth = async () => {
+      console.log('[AuthContext] initializeAuth - Starting authentication initialization');
       try {
         setIsLoading(true);
-        console.log("AuthContext - Starting Try in InitializeAuth!");
+        console.log('[AuthContext] initializeAuth - Set isLoading to true');
 
         // First, get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        console.log('[AuthContext] initializeAuth - getSession result', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userEmail: session?.user?.email,
+          userId: session?.user?.id,
+          sessionExpiresAt: session?.expires_at,
+          error: error ? {
+            message: error.message,
+            status: error.status,
+          } : null,
+        });
+        
         if (error || !mounted) {
+          console.log('[AuthContext] initializeAuth - Early return', {
+            hasError: !!error,
+            error: error?.message,
+            mounted,
+          });
           setIsLoading(false);
           return;
         }
 
         // Update initial state
+        console.log('[AuthContext] initializeAuth - Setting session and user state', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+        });
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         
         // Then set up listener for future changes
+        console.log('[AuthContext] initializeAuth - Setting up auth state change listener');
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (_event, newSession) => {
-            if (!mounted) return;
+          async (event, newSession) => {
+            console.log('[AuthContext] Auth state changed', {
+              event,
+              hasSession: !!newSession,
+              hasUser: !!newSession?.user,
+              userEmail: newSession?.user?.email,
+              mounted,
+            });
+            
+            if (!mounted) {
+              console.log('[AuthContext] Auth state change ignored - component not mounted');
+              return;
+            }
             
             const newUser = newSession?.user ?? null;
+            console.log('[AuthContext] Auth state change - Updating session and user', {
+              hasUser: !!newUser,
+            });
             setSession(newSession);
             setUser(newUser);
           }
         );
 
         // Only set loading to false after everything is initialized
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          console.log('[AuthContext] initializeAuth - Initialization complete, setting isLoading to false');
+          setIsLoading(false);
+        }
         
         return () => {
+          console.log('[AuthContext] initializeAuth - Cleanup function called');
           mounted = false;
           subscription.unsubscribe();
         };
       } catch (error) {
-        console.error("Auth initialization error:", error);
-        if (mounted) setIsLoading(false);
+        console.error('[AuthContext] initializeAuth - Auth initialization error:', error);
+        console.error('[AuthContext] initializeAuth - Error details:', {
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : 'No stack trace',
+        });
+        if (mounted) {
+          console.log('[AuthContext] initializeAuth - Error occurred, setting isLoading to false');
+          setIsLoading(false);
+        }
       }
     };
 

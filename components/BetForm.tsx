@@ -26,16 +26,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
   const [error, setError] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
 
-  // Debug: Log authentication state
-  React.useEffect(() => {
-    console.log("BetForm auth state:", {
-      user: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      session: !!session,
-      sessionExpires: session?.expires_at
-    });
-  }, [user, session]);
 
   // Get the bin edges for the slider
   const binEdges = React.useMemo(() => {
@@ -66,8 +56,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
     setError(null);
     setOk(null);
 
-    console.log("BetForm submit - user:", user?.id, "user object:", user);
-
     if (!user) {
       setError("Please sign in to place a bet");
       return;
@@ -89,14 +77,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
       // Format the range as string for API
       const formattedRange = `[${centsToMillions(selectedRange.lower)} - ${centsToMillions(selectedRange.upper)}]`;
       
-      console.log("Sending bet request:", {
-        market_id: marketId,
-        selected_range: formattedRange,
-        points,
-        userId: user.id,
-        bins: bins // Include bins data for bin_id calculation
-      });
-
       // Prepare headers with session token as fallback
       const headers: Record<string, string> = { 
         "Content-Type": "application/json" 
@@ -105,9 +85,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
       // Add authorization header with session token if available
       if (session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`;
-        console.log("Adding authorization header with session token");
-      } else {
-        console.log("No session access token available");
       }
 
       const res = await fetch("/api/bets/place", {
@@ -120,8 +97,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
           bins, // Include bins data
         }),
       });
-
-      console.log("API response status:", res.status);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -136,7 +111,6 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
       }
 
       const result = await res.json();
-      console.log("API success response:", result);
 
       setOk("Bet placed successfully!");
       setSelectedRange(null);

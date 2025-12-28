@@ -20,9 +20,32 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   // const router = useRouter();
   const pathname = usePathname();
 
+  console.log('[ProtectedRoute] Component rendering', {
+    pathname,
+    hasUser: !!user,
+    isLoading,
+    userEmail: user?.email,
+    userId: user?.id,
+    isPublicRoute: PUBLIC_ROUTES.includes(pathname),
+  });
+
   useEffect(() => {
+    console.log('[ProtectedRoute] useEffect running', {
+      pathname,
+      hasUser: !!user,
+      isLoading,
+      userEmail: user?.email,
+      userId: user?.id,
+      isPublicRoute: PUBLIC_ROUTES.includes(pathname),
+    });
+
     if (!isLoading && !user && !PUBLIC_ROUTES.includes(pathname)) {
       const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+      console.log('[ProtectedRoute] REDIRECTING TO LOGIN', {
+        pathname,
+        redirectUrl,
+        reason: 'No user and not a public route',
+      });
       window.location.assign(redirectUrl);
     }
   }, [user, isLoading, pathname]);

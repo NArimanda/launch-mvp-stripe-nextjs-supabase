@@ -48,3 +48,7 @@ CREATE POLICY "Admins can delete any comment" ON public.movie_comments
 CREATE POLICY "Service role full access to movie_comments" ON public.movie_comments
   FOR ALL TO service_role USING (true);
 
+
+
+
+

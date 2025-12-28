@@ -1,78 +1,110 @@
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
-import { supabaseAdmin } from '@/utils/supabase-admin';
+import { createServerSupabase } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-async function checkAdmin(userId: string): Promise<boolean> {
-  // Use service role client to check admin status
-  const { data, error } = await supabaseAdmin
-    .from('users')
-    .select('is_admin')
-    .eq('id', userId)
-    .single();
-
-  if (error || !data) {
-    return false;
+export async function approveComment(prevState: string | null, formData: FormData): Promise<string | null> {
+  try {
+    const commentId = formData.get('commentId') as string;
+    
+    if (!commentId) {
+      return 'Comment ID is required';
+    }
+    
+    const supabase = await createServerSupabase();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('SERVER ACTION USER:', user?.id);
+    
+    if (authError || !user) {
+      return 'Not authenticated';
+    }
+    
+    // Check if user is admin
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+    
+    if (profileError || !userProfile) {
+      return 'User profile not found';
+    }
+    
+    if (userProfile.is_admin !== true) {
+      return 'Not authorized';
+    }
+    
+    // Update comment to approved
+    const { error: updateError } = await supabase
+      .from('movie_comments')
+      .update({
+        approved: true,
+        approved_at: new Date().toISOString(),
+        approved_by: user.id,
+      })
+      .eq('id', commentId);
+    
+    if (updateError) {
+      return `Failed to approve comment: ${updateError.message}`;
+    }
+    
+    revalidatePath('/admin/comments');
+    return null; // Success
+  } catch (error) {
+    return error instanceof Error ? error.message : 'An unexpected error occurred';
   }
-
-  return data.is_admin === true;
 }
 
-export async function approveComment(commentId: string, userId: string): Promise<{ error?: string }> {
-  // Validate user_id is provided
-  if (!userId) {
-    return { error: 'User ID is required' };
+export async function deleteComment(prevState: string | null, formData: FormData): Promise<string | null> {
+  try {
+    const commentId = formData.get('commentId') as string;
+    
+    if (!commentId) {
+      return 'Comment ID is required';
+    }
+    
+    const supabase = await createServerSupabase();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('SERVER ACTION USER:', user?.id);
+    
+    if (authError || !user) {
+      return 'Not authenticated';
+    }
+    
+    // Check if user is admin
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+    
+    if (profileError || !userProfile) {
+      return 'User profile not found';
+    }
+    
+    if (userProfile.is_admin !== true) {
+      return 'Not authorized';
+    }
+    
+    // Delete the comment
+    const { error: deleteError } = await supabase
+      .from('movie_comments')
+      .delete()
+      .eq('id', commentId);
+    
+    if (deleteError) {
+      return `Failed to delete comment: ${deleteError.message}`;
+    }
+    
+    revalidatePath('/admin/comments');
+    return null; // Success
+  } catch (error) {
+    return error instanceof Error ? error.message : 'An unexpected error occurred';
   }
-
-  // Verify user exists and is admin using service role client
-  const isAdmin = await checkAdmin(userId);
-  if (!isAdmin) {
-    return { error: 'Not authorized' };
-  }
-
-  // Approve the comment using admin client to bypass RLS
-  const { error: updateError } = await supabaseAdmin
-    .from('movie_comments')
-    .update({
-      approved: true,
-      approved_at: new Date().toISOString(),
-      approved_by: userId,
-    })
-    .eq('id', commentId);
-
-  if (updateError) {
-    console.error('Error approving comment:', updateError);
-    return { error: updateError.message };
-  }
-
-  revalidatePath('/admin/comments');
-  return {};
-}
-
-export async function deleteComment(commentId: string, userId: string): Promise<{ error?: string }> {
-  // Validate user_id is provided
-  if (!userId) {
-    return { error: 'User ID is required' };
-  }
-
-  // Verify user exists and is admin using service role client
-  const isAdmin = await checkAdmin(userId);
-  if (!isAdmin) {
-    return { error: 'Not authorized' };
-  }
-
-  // Delete the comment using admin client to bypass RLS
-  const { error: deleteError } = await supabaseAdmin
-    .from('movie_comments')
-    .delete()
-    .eq('id', commentId);
-
-  if (deleteError) {
-    console.error('Error deleting comment:', deleteError);
-    return { error: deleteError.message };
-  }
-
-  revalidatePath('/admin/comments');
-  return {};
 }

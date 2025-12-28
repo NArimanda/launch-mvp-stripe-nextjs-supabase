@@ -30,10 +30,6 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
     };
   }, [next]);
 
-  // Debug: Log current active article
-  useEffect(() => {
-    console.log('Active article:', items[i]?.title, 'URL:', items[i]?.href);
-  }, [i, items]);
 
   const handleMouseEnter = useCallback(() => {
     if (timerRef.current) {
@@ -46,7 +42,7 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
   }, [next]);
 
   const handleArticleClick = useCallback((item: HeroItem) => {
-    console.log('Clicked article:', item.title, 'URL:', item.href);
+    // Handle article click if needed
   }, []);
 
   if (!items.length) {
