@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Reply, Quote, Check, Trash2 } from 'lucide-react';
+import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
 import { approveCommentAction, deleteCommentAction } from '@/app/api/comments/actions';
 
 interface Comment {
@@ -27,7 +27,6 @@ interface MovieCommentsListProps {
   mode?: 'public' | 'admin';
   pendingComments?: Comment[];
   onReply?: (commentId: string) => void;
-  onQuote?: (commentId: string) => void;
   renderQuoteReferences?: (text: string) => React.ReactNode;
   isAdmin?: boolean;
 }
@@ -78,7 +77,6 @@ function CommentCard({
   replies, 
   depth = 0,
   onReply,
-  onQuote,
   renderQuoteReferences,
   isAdmin = false,
   onRefresh
@@ -87,7 +85,6 @@ function CommentCard({
   replies: Comment[]; 
   depth?: number;
   onReply?: (commentId: string) => void;
-  onQuote?: (commentId: string) => void;
   renderQuoteReferences?: (text: string) => React.ReactNode;
   isAdmin?: boolean;
   onRefresh?: () => void;
@@ -164,15 +161,6 @@ function CommentCard({
                   Reply
                 </button>
               )}
-              {onQuote && (
-                <button
-                  className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-                  onClick={() => onQuote(comment.id)}
-                >
-                  <Quote className="h-4 w-4" />
-                  Quote
-                </button>
-              )}
             </>
           )}
           {isAdmin && (
@@ -222,7 +210,6 @@ function CommentCard({
               replies={[]}
               depth={depth + 1}
               onReply={onReply}
-              onQuote={onQuote}
               renderQuoteReferences={renderQuoteReferences}
               isAdmin={isAdmin}
               onRefresh={onRefresh}
@@ -239,7 +226,6 @@ export default function MovieCommentsList({
   mode = 'public',
   pendingComments = [],
   onReply,
-  onQuote,
   renderQuoteReferences,
   isAdmin = false
 }: MovieCommentsListProps) {
@@ -546,7 +532,6 @@ export default function MovieCommentsList({
               replies={comment.replies}
               depth={0}
               onReply={onReply}
-              onQuote={onQuote}
               renderQuoteReferences={renderQuoteReferences}
               isAdmin={isAdmin}
               onRefresh={handleRefresh}

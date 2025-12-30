@@ -126,13 +126,6 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
     document.getElementById('comment-composer')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
-  const handleQuote = (commentId: string) => {
-    setReplyToId(commentId);
-    const quoteText = `>>${commentId}\n`;
-    setCommentBody(prev => prev + quoteText);
-    // Scroll to comment composer
-    document.getElementById('comment-composer')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  };
 
   const handleSubmitComment = async () => {
     if (!user || !username) return;
@@ -388,7 +381,6 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         mode={isAdmin ? 'admin' : 'public'}
         pendingComments={pendingComments}
         onReply={handleReply}
-        onQuote={handleQuote}
         renderQuoteReferences={renderQuoteReferences}
         isAdmin={isAdmin}
       />
