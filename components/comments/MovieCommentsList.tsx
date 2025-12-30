@@ -121,7 +121,7 @@ function CommentCard({
   return (
     <div className={`${depth > 0 ? 'mt-4 border-l-2 border-slate-200 dark:border-slate-700 pl-4' : ''}`}>
       <div className={`bg-white dark:bg-neutral-dark rounded-lg p-4 shadow-sm border ${
-        comment.isPending 
+        (comment.isPending || comment.approved === false)
           ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/10' 
           : 'border-slate-200 dark:border-slate-700'
       }`}>
@@ -133,9 +133,9 @@ function CommentCard({
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {formatDate(comment.created_at)}
             </span>
-            {comment.isPending && (
+            {(comment.isPending || comment.approved === false) && (
               <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded">
-                Pending approval
+                Pending
               </span>
             )}
           </div>
@@ -153,7 +153,7 @@ function CommentCard({
         )}
 
         <div className="flex items-center gap-4 flex-wrap">
-          {!comment.isPending && (
+          {comment.approved !== false && (
             <>
               {onReply && (
                 <button
@@ -249,11 +249,34 @@ export default function MovieCommentsList({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
     router.refresh();
   };
+
+  // Get current user ID and admin status
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        setCurrentUserId(authUser.id);
+        // Check if user is admin
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('is_admin')
+          .eq('id', authUser.id)
+          .single();
+        setIsUserAdmin(userProfile?.is_admin === true);
+      } else {
+        setCurrentUserId(null);
+        setIsUserAdmin(false);
+      }
+    };
+    fetchUserInfo();
+  }, []);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -262,25 +285,40 @@ export default function MovieCommentsList({
         setLoading(true);
         setError(null);
 
-        // Try to use v_movie_comments view first, fallback to joining tables
-        let query = supabase
-          .from('v_movie_comments')
-          .select('id, movie_id, user_id, parent_id, body, approved, created_at, username, position_market_type, position_selected_range, position_points')
-          .eq('movie_id', movieId);
-        
-        // Add approved filter for public mode
-        if (mode === 'public') {
-          query = query.eq('approved', true);
-        }
-        
-        query = query.order('created_at', { ascending: true });
+        // Use base table with join to users (NOT a view, to avoid SECURITY DEFINER issues)
+        // RLS will handle filtering, but we'll also filter in UI for defense-in-depth
+        let commentsData: any[] | null = null;
+        let commentsError: any = null;
 
-        // If view doesn't exist or fails, fallback to joining movie_comments with users
-        const { data: viewData, error: viewError } = await query;
+        // Try fetching with join first
+        const { data: joinedData, error: joinError } = await supabase
+          .from('movie_comments')
+          .select(`
+            id,
+            movie_id,
+            user_id,
+            parent_id,
+            body,
+            approved,
+            created_at,
+            position_market_type,
+            position_selected_range,
+            position_points,
+            users(username)
+          `)
+          .eq('movie_id', movieId)
+          .order('created_at', { ascending: true });
 
-        if (viewError || !viewData) {
-          // Fallback: join movie_comments with users table
-          let commentsQuery = supabase
+        if (joinError) {
+          console.warn('Join query failed, trying without join:', {
+            message: joinError.message,
+            details: joinError.details,
+            hint: joinError.hint,
+            code: joinError.code
+          });
+          
+          // Fallback: fetch comments without join, then fetch usernames separately
+          const { data: commentsOnly, error: commentsOnlyError } = await supabase
             .from('movie_comments')
             .select(`
               id,
@@ -292,62 +330,87 @@ export default function MovieCommentsList({
               created_at,
               position_market_type,
               position_selected_range,
-              position_points,
-              users(username)
+              position_points
             `)
-            .eq('movie_id', movieId);
-          
-          // Add approved filter for public mode
-          if (mode === 'public') {
-            commentsQuery = commentsQuery.eq('approved', true);
-          }
-          
-          commentsQuery = commentsQuery.order('created_at', { ascending: true });
+            .eq('movie_id', movieId)
+            .order('created_at', { ascending: true });
 
-          const { data: commentsData, error: commentsError } = await commentsQuery;
-
-          if (commentsError) {
-            throw commentsError;
+          if (commentsOnlyError) {
+            console.error('Comments fetch error:', {
+              message: commentsOnlyError.message,
+              details: commentsOnlyError.details,
+              hint: commentsOnlyError.hint,
+              code: commentsOnlyError.code
+            });
+            throw new Error(commentsOnlyError.message || commentsOnlyError.details || 'Failed to fetch comments');
           }
 
-          // Transform the data to flatten the nested structure
-          const transformedComments = (commentsData || []).map((comment: any) => {
-            const user = Array.isArray(comment.users) ? comment.users[0] : comment.users;
-            return {
-              id: comment.id,
-              movie_id: comment.movie_id,
-              user_id: comment.user_id,
-              parent_id: comment.parent_id,
-              body: comment.body,
-              approved: comment.approved,
-              created_at: comment.created_at,
-              username: user?.username || null,
-              position_market_type: comment.position_market_type || null,
-              position_selected_range: comment.position_selected_range || null,
-              position_points: comment.position_points || null
-            };
-          });
+          commentsData = commentsOnly;
+          
+          // Fetch usernames separately
+          if (commentsData && commentsData.length > 0) {
+            const userIds = [...new Set(commentsData.map((c: any) => c.user_id).filter(Boolean))];
+            const { data: usersData } = await supabase
+              .from('users')
+              .select('id, username')
+              .in('id', userIds);
 
-          setComments(transformedComments);
+            const userMap = new Map((usersData || []).map((u: any) => [u.id, u.username]));
+            commentsData = commentsData.map((comment: any) => ({
+              ...comment,
+              users: { username: userMap.get(comment.user_id) || null }
+            }));
+          }
         } else {
-          // Use view data
-          setComments(viewData.map((c: any) => ({
-            id: c.id,
-            movie_id: c.movie_id,
-            user_id: c.user_id,
-            parent_id: c.parent_id,
-            body: c.body,
-            approved: c.approved,
-            created_at: c.created_at,
-            username: c.username || null,
-            position_market_type: c.position_market_type || null,
-            position_selected_range: c.position_selected_range || null,
-            position_points: c.position_points || null
-          })));
+          commentsData = joinedData;
+        }
+
+        if (!commentsData) {
+          throw new Error('No comments data returned');
+        }
+
+        // Transform the data to flatten the nested structure
+        const transformedComments = commentsData.map((comment: any) => {
+          const user = Array.isArray(comment.users) ? comment.users[0] : comment.users;
+          return {
+            id: comment.id,
+            movie_id: comment.movie_id,
+            user_id: comment.user_id,
+            parent_id: comment.parent_id,
+            body: comment.body,
+            approved: comment.approved,
+            created_at: comment.created_at,
+            username: user?.username || null,
+            position_market_type: comment.position_market_type || null,
+            position_selected_range: comment.position_selected_range || null,
+            position_points: comment.position_points || null
+          };
+        });
+
+        setComments(transformedComments);
+        
+        // Debug: log user ID and pending count
+        if (process.env.NODE_ENV === 'development') {
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          const pendingCount = transformedComments.filter(c => c.approved === false).length;
+          console.log('[MovieCommentsList] Debug (fetched):', {
+            userId: authUser?.id || null,
+            pendingCount,
+            totalComments: transformedComments.length
+          });
         }
       } catch (err) {
         console.error('Error fetching comments:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load comments');
+        // Handle different error types
+        let errorMessage = 'Failed to load comments';
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        } else if (typeof err === 'object' && err !== null) {
+          // Try to extract message from Supabase error object
+          const errorObj = err as any;
+          errorMessage = errorObj.message || errorObj.details || errorObj.hint || JSON.stringify(err);
+        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -387,11 +450,23 @@ export default function MovieCommentsList({
     return rootComments;
   };
 
+  // STEP 2: Defense-in-depth UI filtering
+  // Filter comments based on user role:
+  // - Non-admins: only see approved=true OR approved=false where user_id matches
+  // - Admins: see everything
+  const filteredComments = isUserAdmin || isAdmin
+    ? comments // Admins see everything
+    : comments.filter(comment => 
+        comment.approved === true || comment.user_id === currentUserId
+      );
+
   // Merge approved comments with pending comments (only show pending for current user)
-  const allComments = [
-    ...comments,
-    ...(user ? pendingComments.filter(c => c.user_id === user.id) : [])
-  ];
+  // Deduplicate by ID to avoid showing the same comment twice (optimistic + RLS)
+  const commentIds = new Set(filteredComments.map(c => c.id));
+  const uniquePendingComments = user 
+    ? pendingComments.filter(c => c.user_id === user.id && !commentIds.has(c.id))
+    : [];
+  const allComments = [...filteredComments, ...uniquePendingComments];
 
   const threadedComments = buildThreads(allComments);
 
@@ -423,14 +498,39 @@ export default function MovieCommentsList({
     );
   }
 
+  const pendingCountFetched = comments.filter(c => c.approved === false).length;
+  const pendingCountFiltered = filteredComments.filter(c => c.approved === false).length;
+  const showAdminBanner = (isUserAdmin || isAdmin) && pendingCountFetched > 0;
+
   return (
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
         <MessageSquare className="h-5 w-5 text-slate-600 dark:text-slate-400" />
         <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-          Comments {comments.length > 0 && `(${comments.length})`}
+          Comments {filteredComments.length > 0 && `(${filteredComments.length})`}
         </h2>
       </div>
+      
+      {/* Admin Mode Banner */}
+      {showAdminBanner && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+            Admin Mode: showing all pending comments ({pendingCountFetched} pending)
+          </p>
+        </div>
+      )}
+      
+      {/* Debug info (dev only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">
+          <div>User ID: {currentUserId || 'null'}</div>
+          <div>Is Admin: {String(isUserAdmin || isAdmin)}</div>
+          <div>Total fetched: {comments.length}</div>
+          <div>Pending fetched: {pendingCountFetched}</div>
+          <div>Pending after filter: {pendingCountFiltered}</div>
+          <div>Total after filter: {filteredComments.length}</div>
+        </div>
+      )}
 
       {threadedComments.length === 0 ? (
         <div className="bg-white dark:bg-neutral-dark rounded-lg p-8 text-center border border-slate-200 dark:border-slate-700">
