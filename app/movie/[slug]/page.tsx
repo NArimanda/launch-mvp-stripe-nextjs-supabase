@@ -45,9 +45,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
   if (!movie) return notFound();
 
   const marketButtons = [
-    { title: "Opening Day", timeframe: "opening-day" },
     { title: "Weekend", timeframe: "weekend" },
-    { title: "Week", timeframe: "week" },
     { title: "Month", timeframe: "month" },
   ];
 
@@ -76,37 +74,18 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
       <section className="mt-8">
         <h2 className="text-lg font-semibold mb-4">Markets</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Domestic Section */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Domestic</h3>
-            <div className="flex flex-col gap-3">
-              {marketButtons.map((button) => (
-                <Link
-                  key={button.title}
-                  href={`/movie/${movie.slug}/domestic/${button.timeframe}`}
-                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  {button.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Worldwide Section */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Worldwide</h3>
-            <div className="flex flex-col gap-3">
-              {marketButtons.map((button) => (
-                <Link
-                  key={`worldwide-${button.title}`}
-                  href={`/movie/${movie.slug}/worldwide/${button.timeframe}`}
-                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  {button.title}
-                </Link>
-              ))}
-            </div>
+        <div>
+          <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Worldwide</h3>
+          <div className="flex flex-col gap-3">
+            {marketButtons.map((button) => (
+              <Link
+                key={`worldwide-${button.title}`}
+                href={`/movie/${movie.slug}/worldwide/${button.timeframe}`}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-md hover:shadow-lg"
+              >
+                {button.title}
+              </Link>
+            ))}
           </div>
         </div>
       </section>

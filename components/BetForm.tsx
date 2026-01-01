@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getRanges, type MarketType, type RangeBucket } from "@/lib/boxOfficeRanges";
 
 type Bin = {
   bin_id: string;
@@ -18,27 +19,62 @@ interface BetFormProps {
   timeframe: string;
 }
 
-export default function BetForm({ marketId, bins }: BetFormProps) {
+export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
   const { user, session } = useAuth();
+  
+  // Map timeframe to MarketType
+  const marketType: MarketType = React.useMemo(() => {
+    return timeframe === "weekend" ? "OPENING_WEEKEND" : "ONE_MONTH";
+  }, [timeframe]);
+  
+  // Get available ranges for this market type
+  const availableRanges = React.useMemo(() => {
+    return getRanges(marketType);
+  }, [marketType]);
+  
+  // Get the bin edges for the slider (in dollars)
+  const binEdges = React.useMemo(() => {
+    const edges = availableRanges.map(bucket => bucket.lower);
+    const lastBucket = availableRanges[availableRanges.length - 1];
+    // For open-ended buckets, we still need an edge for the slider, but we'll track it separately
+    if (lastBucket?.upper !== null && lastBucket?.upper !== undefined) {
+      edges.push(lastBucket.upper);
+    } else {
+      // For open-ended, add the lower value again so slider can select it
+      edges.push(lastBucket.lower);
+    }
+    return edges;
+  }, [availableRanges]);
+  
+  // Track which bucket is open-ended
+  const openEndedBuckets = React.useMemo(() => {
+    const set = new Set<string>();
+    availableRanges.forEach(bucket => {
+      if (bucket.upper === null || bucket.label.includes('+')) {
+        set.add(`${bucket.lower}-null`);
+      }
+    });
+    return set;
+  }, [availableRanges]);
+  
+  // Map to find bucket from dollar values
+  const bucketMap = React.useMemo(() => {
+    const map = new Map<string, RangeBucket>();
+    availableRanges.forEach(bucket => {
+      const key = `${bucket.lower}-${bucket.upper ?? 'null'}`;
+      map.set(key, bucket);
+    });
+    return map;
+  }, [availableRanges]);
+  
   const [selectedRange, setSelectedRange] = React.useState<{ lower: number; upper: number } | null>(null);
   const [points, setPoints] = React.useState<number>(50);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
 
-
-  // Get the bin edges for the slider
-  const binEdges = React.useMemo(() => {
-    const edges = bins.map(bin => bin.lower_cents);
-    const lastBin = bins[bins.length - 1];
-    if (lastBin?.upper_cents !== null && lastBin?.upper_cents !== undefined) {
-      edges.push(lastBin.upper_cents);
-    }
-    return edges;
-  }, [bins]);
-
-  // Convert cents to millions for display
-  const centsToMillions = (cents: number) => cents / 100 / 1_000_000;
+  // Convert dollars to millions for display
+  const dollarsToMillions = (dollars: number) => dollars / 1_000_000;
   const formatCurrency = (millions: number) => {
     if (millions >= 1000) {
       return `$${(millions / 1000).toFixed(millions % 1000 === 0 ? 0 : 1)}B`;
@@ -74,8 +110,43 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
     setSubmitting(true);
 
     try {
-      // Format the range as string for API
-      const formattedRange = `[${centsToMillions(selectedRange.lower)} - ${centsToMillions(selectedRange.upper)}]`;
+      // Check if this is an open-ended bucket
+      const isOpenEnded = selectedRange.upper === null || 
+                          selectedRange.upper === selectedRange.lower ||
+                          openEndedBuckets.has(`${selectedRange.lower}-null`);
+      
+      // Find the matching bucket
+      let matchingBucket: RangeBucket | undefined;
+      if (isOpenEnded) {
+        // For open-ended, find bucket with matching lower and null upper
+        matchingBucket = availableRanges.find(b => 
+          b.lower === selectedRange.lower && b.upper === null
+        );
+      } else {
+        const key = `${selectedRange.lower}-${selectedRange.upper}`;
+        matchingBucket = bucketMap.get(key);
+      }
+      
+      // Format the range as string for API (in millions)
+      const lowerM = dollarsToMillions(selectedRange.lower);
+      
+      // Serialize: open-ended uses "N+", closed uses "N-M"
+      let formattedRange: string;
+      if (isOpenEnded || (matchingBucket && matchingBucket.upper === null)) {
+        formattedRange = `${lowerM}+`;
+      } else {
+        const upperM = selectedRange.upper ? dollarsToMillions(selectedRange.upper) : lowerM;
+        formattedRange = `${lowerM}-${upperM}`;
+      }
+      
+      // Runtime guard: if label includes '+' but selected_range doesn't, fix it
+      if (matchingBucket?.label.includes('+') && !formattedRange.includes('+')) {
+        console.error('Mismatch: bucket label includes "+" but selected_range does not. Fixing...', {
+          label: matchingBucket.label,
+          selected_range: formattedRange
+        });
+        formattedRange = `${lowerM}+`;
+      }
       
       // Prepare headers with session token as fallback
       const headers: Record<string, string> = { 
@@ -93,8 +164,10 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
         body: JSON.stringify({
           market_id: marketId,
           selected_range: formattedRange,
+          selected_bucket_id: matchingBucket?.id,
+          selected_bucket_label: matchingBucket?.label,
           points,
-          bins, // Include bins data
+          bins, // Include bins data for backward compatibility
         }),
       });
 
@@ -138,21 +211,39 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
         <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">Select a range:</div>
         <RangeSlider 
           edges={binEdges}
+          availableRanges={availableRanges}
           onRangeChange={(lowerIndex, upperIndex) => {
-            const lowerCents = binEdges[lowerIndex];
-            const upperCents = binEdges[upperIndex]; // Use the current edge, not the next one
-            setSelectedRange({ lower: lowerCents, upper: upperCents });
+            const lowerDollars = binEdges[lowerIndex];
+            // Check if upperIndex is at the last position and if the last bucket is open-ended
+            const lastBucket = availableRanges[availableRanges.length - 1];
+            const isLastPosition = upperIndex === binEdges.length - 1;
+            const isOpenEnded = isLastPosition && lastBucket?.upper === null;
+            
+            const upperDollars = isOpenEnded ? null : binEdges[upperIndex];
+            setSelectedRange({ lower: lowerDollars, upper: upperDollars });
           }}
           formatValue={formatCurrency}
-          centsToMillions={centsToMillions}
+          dollarsToMillions={dollarsToMillions}
         />
-        {selectedRange && (
-          <div className="mt-2 text-sm text-slate-700 dark:text-slate-200">
-            Range selected: <span className="font-medium">
-              {formatCurrency(centsToMillions(selectedRange.lower))} - {formatCurrency(centsToMillions(selectedRange.upper))}
-            </span>
-          </div>
-        )}
+        {selectedRange && (() => {
+          const isOpenEnded = selectedRange.upper === null || 
+                              selectedRange.upper === selectedRange.lower ||
+                              openEndedBuckets.has(`${selectedRange.lower}-null`);
+          const matchingBucket = isOpenEnded
+            ? availableRanges.find(b => b.lower === selectedRange.lower && b.upper === null)
+            : bucketMap.get(`${selectedRange.lower}-${selectedRange.upper}`);
+          
+          const displayLabel = matchingBucket?.label || 
+            (isOpenEnded 
+              ? `${formatCurrency(dollarsToMillions(selectedRange.lower))}+`
+              : `${formatCurrency(dollarsToMillions(selectedRange.lower))} - ${formatCurrency(dollarsToMillions(selectedRange.upper!))}`);
+          
+          return (
+            <div className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+              Range selected: <span className="font-medium">{displayLabel}</span>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="mb-4 flex items-center gap-3">
@@ -188,12 +279,13 @@ export default function BetForm({ marketId, bins }: BetFormProps) {
 
 interface RangeSliderProps {
   edges: number[];
+  availableRanges: RangeBucket[];
   onRangeChange: (lowerIndex: number, upperIndex: number) => void;
   formatValue: (value: number) => string;
-  centsToMillions: (cents: number) => number;
+  dollarsToMillions: (dollars: number) => number;
 }
 
-function RangeSlider({ edges, onRangeChange, formatValue, centsToMillions }: RangeSliderProps) {
+function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dollarsToMillions }: RangeSliderProps) {
   const [lowerIndex, setLowerIndex] = React.useState(0);
   const [upperIndex, setUpperIndex] = React.useState(edges.length - 1);
   const [isDragging, setIsDragging] = React.useState<"lower" | "upper" | null>(null);
@@ -243,10 +335,10 @@ function RangeSlider({ edges, onRangeChange, formatValue, centsToMillions }: Ran
 
   // Format the range display
   const formatRangeDisplay = () => {
-    const lowerValue = formatValue(centsToMillions(edges[lowerIndex]));
+    const lowerValue = formatValue(dollarsToMillions(edges[lowerIndex]));
     const upperValue = upperIndex === edges.length - 1 
-      ? formatValue(centsToMillions(edges[upperIndex])) + "+"
-      : formatValue(centsToMillions(edges[upperIndex]));
+      ? formatValue(dollarsToMillions(edges[upperIndex])) + "+"
+      : formatValue(dollarsToMillions(edges[upperIndex]));
     
     return `${lowerValue} - ${upperValue}`;
   };
@@ -301,10 +393,11 @@ function RangeSlider({ edges, onRangeChange, formatValue, centsToMillions }: Ran
           <div
             key={index}
             className="w-px h-2 bg-slate-300 dark:bg-slate-500"
-            title={formatValue(centsToMillions(edge))}
+            title={formatValue(dollarsToMillions(edge))}
           />
         ))}
       </div>
     </div>
   );
 }
+

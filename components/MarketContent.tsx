@@ -44,8 +44,8 @@ export default function MarketContent({ marketId, bins, stats, type, timeframe, 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-3">Current Sentiment</h2>
         <MarketHeatmap
-          bins={bins}
-          stats={stats}
+          marketId={marketId}
+          timeframe={timeframe}
         />
       </div>
 

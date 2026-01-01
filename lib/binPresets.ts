@@ -1,6 +1,6 @@
 // lib/binPresets.ts
-export type MarketType = "domestic" | "worldwide";
-export type Timeframe = "opening-day" | "weekend" | "week" | "month";
+export type MarketType = "worldwide";
+export type Timeframe = "weekend" | "month";
 
 type EdgesMap = Record<MarketType, Record<Timeframe, number[]>>;
 

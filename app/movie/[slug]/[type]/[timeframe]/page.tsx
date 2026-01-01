@@ -5,6 +5,7 @@ import { buildBinsForMarket } from "@/lib/binPresets";
 import MarketContentWrapper from "@/components/MarketContentWrapper";
 import CountdownTimer from "@/components/CountdownTimer";
 import MovieComments from "@/components/comments/MovieComments";
+import UnresolveMarketButton from "@/components/UnresolveMarketButton";
 
 type BetRow = { selected_bin_id: string | null; side: boolean | null; points: number | null };
 
@@ -24,9 +25,7 @@ function normalizeSlug(input: string) {
 
 function formatTimeframeTitle(tf: string) {
   const m: Record<string, string> = {
-    "opening-day": "Opening Day",
     weekend: "Weekend",
-    week: "Week",
     month: "Month",
   };
   return m[tf] ?? tf;
@@ -38,15 +37,15 @@ function formatTypeTitle(t: string) {
 export default async function MarketPage({
   params,
 }: {
-  params: Promise<{ slug: string; type: "domestic" | "worldwide"; timeframe: "opening-day" | "weekend" | "week" | "month" }>;
+  params: Promise<{ slug: string; type: "worldwide"; timeframe: "weekend" | "month" }>;
 }) {
   const { slug, type, timeframe } = await params;
   const supabase = await createClient();
   const raw = normalizeSlug(slug);
 
   // validate params
-  const validTypes = ["domestic", "worldwide"] as const;
-  const validTF = ["opening-day", "weekend", "week", "month"] as const;
+  const validTypes = ["worldwide"] as const;
+  const validTF = ["weekend", "month"] as const;
   if (!validTypes.includes(type) || !validTF.includes(timeframe)) return notFound();
 
   // movie
@@ -113,6 +112,7 @@ export default async function MarketPage({
               Market status: <span className="font-medium">{market.status}</span>
               {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
             </p>
+            <UnresolveMarketButton marketId={market.id} marketStatus={market.status} />
           </div>
           <CountdownTimer closeTime={market.close_time} marketStatus={market.status} />
         </div>
