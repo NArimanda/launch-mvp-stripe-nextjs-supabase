@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRanges, type MarketType, type RangeBucket } from "@/lib/boxOfficeRanges";
+import { computeMultiplier, MAX_MULT } from "@/lib/multiplier";
 
 type Bin = {
   bin_id: string;
@@ -67,7 +68,7 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
     return map;
   }, [availableRanges]);
   
-  const [selectedRange, setSelectedRange] = React.useState<{ lower: number; upper: number } | null>(null);
+  const [selectedRange, setSelectedRange] = React.useState<{ lower: number; upper: number | null } | null>(null);
   const [points, setPoints] = React.useState<number>(50);
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -82,11 +83,58 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
     return `$${millions.toFixed(millions % 1 === 0 ? 0 : 1)}M`;
   };
 
-  // Placeholder: multiplier based on simple crowding (fewer points => higher payout)
-  // Replace with your pricing function later
-  const crowdFactor = 1.0; // TODO: pull real bin totals if you want live quotes here
-  const baseOdds = 1.8;
-  const potentialPayout = Math.max(1, Math.round(points * baseOdds * crowdFactor));
+  /**
+   * Compute number of bins (k) covered by the selected range
+   * A bin is covered if it overlaps with [selectedRange.lower, selectedRange.upper]
+   * For open-ended ranges, upper is null and we check if bin.lower >= selectedRange.lower
+   */
+  const computeSelectedBins = React.useMemo(() => {
+    if (!selectedRange) return 0;
+    
+    const { lower: betLower, upper: betUpper } = selectedRange;
+    let coveredCount = 0;
+    
+    for (const bin of availableRanges) {
+      const binLower = bin.lower;
+      const binUpper = bin.upper;
+      
+      // Check if bin overlaps with selected range
+      if (betUpper === null) {
+        // Open-ended bet: covers all bins starting from betLower (inclusive)
+        if (binLower >= betLower) {
+          coveredCount++;
+        }
+      } else if (binUpper === null) {
+        // Open-ended bin: covers if bet range extends to or beyond bin.lower
+        if (betUpper > binLower) {
+          coveredCount++;
+        }
+      } else {
+        // Both have bounds: overlap if bin.lower < betUpper && binUpper > betLower
+        // Note: bins are half-open [binLower, binUpper), bets are closed [betLower, betUpper]
+        if (binLower < betUpper && binUpper > betLower) {
+          coveredCount++;
+        }
+      }
+    }
+    
+    return coveredCount;
+  }, [selectedRange, availableRanges]);
+
+  // Compute multiplier based on bin width
+  const multiplier = React.useMemo(() => {
+    if (!selectedRange) return MAX_MULT;
+    return computeMultiplier({
+      totalBins: availableRanges.length,
+      selectedBins: computeSelectedBins,
+    });
+  }, [selectedRange, availableRanges.length, computeSelectedBins]);
+
+  // Compute potential payout
+  const potentialPayout = React.useMemo(() => {
+    if (!selectedRange || points < 1) return 0;
+    return Math.round(points * multiplier);
+  }, [points, multiplier, selectedRange]);
 
   const submit = async () => {
     setError(null);
@@ -167,6 +215,7 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
           selected_bucket_id: matchingBucket?.id,
           selected_bucket_label: matchingBucket?.label,
           points,
+          price_multiplier: multiplier,
           bins, // Include bins data for backward compatibility
         }),
       });
@@ -258,9 +307,33 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
         />
       </div>
 
-      <div className="mb-4 text-sm text-slate-700 dark:text-slate-200">
-        Potential payout: <span className="font-semibold">{potentialPayout}</span> pts
-      </div>
+      {selectedRange && (
+        <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+          <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">
+            Bet Details:
+          </div>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-600 dark:text-slate-300">Bins covered:</span>
+              <span className="font-medium text-slate-900 dark:text-white">
+                {computeSelectedBins} / {availableRanges.length}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 dark:text-slate-300">Multiplier:</span>
+              <span className="font-medium text-slate-900 dark:text-white">
+                {multiplier.toFixed(2)}x
+              </span>
+            </div>
+            <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-600">
+              <span className="text-slate-700 dark:text-slate-200 font-medium">Potential payout:</span>
+              <span className="font-semibold text-slate-900 dark:text-white">
+                {potentialPayout} pts
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
       {ok && <div className="mb-3 text-sm text-green-600">{ok}</div>}

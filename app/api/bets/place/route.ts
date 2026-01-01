@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     // Parse request body
-    const { market_id, selected_range, points, bins } = await request.json();
+    const { market_id, selected_range, points, price_multiplier, bins } = await request.json();
 
     // Validate required fields
     if (!market_id || !selected_range || !points || points < 1) {
@@ -124,9 +124,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Insufficient points" }, { status: 400 });
     }
 
-    // Calculate potential payout
-    const price_multiplier = 3;
-    const potential_payout = points * price_multiplier;
+    // Calculate potential payout using multiplier from request (or default to 1 for backward compatibility)
+    const multiplier = price_multiplier && typeof price_multiplier === 'number' && price_multiplier >= 1 && price_multiplier <= 3
+      ? price_multiplier
+      : 1; // Fallback for backward compatibility (conservative default)
+    const potential_payout = Math.round(points * multiplier);
 
     // Start a transaction: deduct points and insert bet
     const { error: transactionError } = await supabase.rpc('place_bet_transaction', {
