@@ -6,6 +6,7 @@ import MarketContentWrapper from "@/components/MarketContentWrapper";
 import CountdownTimer from "@/components/CountdownTimer";
 import MovieComments from "@/components/comments/MovieComments";
 import UnresolveMarketButton from "@/components/UnresolveMarketButton";
+import ResolveMarketForm from "@/components/ResolveMarketForm";
 
 type BetRow = { selected_bin_id: string | null; side: boolean | null; points: number | null };
 
@@ -113,6 +114,7 @@ export default async function MarketPage({
               {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
             </p>
             <UnresolveMarketButton marketId={market.id} marketStatus={market.status} />
+            <ResolveMarketForm marketId={market.id} marketStatus={market.status} />
           </div>
           <CountdownTimer closeTime={market.close_time} marketStatus={market.status} />
         </div>
