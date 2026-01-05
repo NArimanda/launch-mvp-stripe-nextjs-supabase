@@ -296,9 +296,14 @@ export default function MovieCommentsList({
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false);
+  const [nextCursor, setNextCursor] = useState<{ created_at: string; id: string } | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+    setNextCursor(null);
+    setHasMore(false);
     router.refresh();
   };
 
@@ -323,135 +328,53 @@ export default function MovieCommentsList({
     fetchUserInfo();
   }, []);
 
+  // Initial fetch with pagination
   useEffect(() => {
     const fetchComments = async () => {
       setLoading(true);
       try {
-        setLoading(true);
         setError(null);
 
-        // Use base table with join to users (NOT a view, to avoid SECURITY DEFINER issues)
-        // RLS will handle filtering, but we'll also filter in UI for defense-in-depth
-        let commentsData: any[] | null = null;
-        let commentsError: any = null;
-
-        // Try fetching with join first
-        const { data: joinedData, error: joinError } = await supabase
-          .from('movie_comments')
-          .select(`
-            id,
-            movie_id,
-            user_id,
-            parent_id,
-            body,
-            approved,
-            created_at,
-            position_market_type,
-            position_selected_range,
-            position_points,
-            users(username)
-          `)
-          .eq('movie_id', movieId)
-          .order('created_at', { ascending: true });
-
-        if (joinError) {
-          console.warn('Join query failed, trying without join:', {
-            message: joinError.message,
-            details: joinError.details,
-            hint: joinError.hint,
-            code: joinError.code
-          });
-          
-          // Fallback: fetch comments without join, then fetch usernames separately
-          const { data: commentsOnly, error: commentsOnlyError } = await supabase
-            .from('movie_comments')
-            .select(`
-              id,
-              movie_id,
-              user_id,
-              parent_id,
-              body,
-              approved,
-              created_at,
-              position_market_type,
-              position_selected_range,
-              position_points
-            `)
-            .eq('movie_id', movieId)
-            .order('created_at', { ascending: true });
-
-          if (commentsOnlyError) {
-            console.error('Comments fetch error:', {
-              message: commentsOnlyError.message,
-              details: commentsOnlyError.details,
-              hint: commentsOnlyError.hint,
-              code: commentsOnlyError.code
-            });
-            throw new Error(commentsOnlyError.message || commentsOnlyError.details || 'Failed to fetch comments');
-          }
-
-          commentsData = commentsOnly;
-          
-          // Fetch usernames separately
-          if (commentsData && commentsData.length > 0) {
-            const userIds = [...new Set(commentsData.map((c: any) => c.user_id).filter(Boolean))];
-            const { data: usersData } = await supabase
-              .from('users')
-              .select('id, username')
-              .in('id', userIds);
-
-            const userMap = new Map((usersData || []).map((u: any) => [u.id, u.username]));
-            commentsData = commentsData.map((comment: any) => ({
-              ...comment,
-              users: { username: userMap.get(comment.user_id) || null }
-            }));
-          }
-        } else {
-          commentsData = joinedData;
-        }
-
-        if (!commentsData) {
-          throw new Error('No comments data returned');
-        }
-
-        // Transform the data to flatten the nested structure
-        const transformedComments = commentsData.map((comment: any) => {
-          const user = Array.isArray(comment.users) ? comment.users[0] : comment.users;
-          return {
-            id: comment.id,
-            movie_id: comment.movie_id,
-            user_id: comment.user_id,
-            parent_id: comment.parent_id,
-            body: comment.body,
-            approved: comment.approved,
-            created_at: comment.created_at,
-            username: user?.username || null,
-            position_market_type: comment.position_market_type || null,
-            position_selected_range: comment.position_selected_range || null,
-            position_points: comment.position_points || null
-          };
+        // Fetch initial 5 comments (newest first) via API route
+        const params = new URLSearchParams({
+          movieId,
+          limit: '5',
         });
 
-        setComments(transformedComments);
+        const response = await fetch(`/api/comments/page?${params.toString()}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to fetch comments: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const { comments: fetchedComments, nextCursor: fetchedCursor } = data;
+
+        if (!Array.isArray(fetchedComments)) {
+          throw new Error('Invalid response format');
+        }
+
+        setComments(fetchedComments);
+        setNextCursor(fetchedCursor);
+        setHasMore(fetchedCursor !== null);
         
         // Debug: log user ID and pending count
         if (process.env.NODE_ENV === 'development') {
           const { data: { user: authUser } } = await supabase.auth.getUser();
-          const pendingCount = transformedComments.filter(c => c.approved === false).length;
+          const pendingCount = fetchedComments.filter((c: Comment) => c.approved === false).length;
           console.log('[MovieCommentsList] Debug (fetched):', {
             userId: authUser?.id || null,
             pendingCount,
-            totalComments: transformedComments.length
+            totalComments: fetchedComments.length,
+            hasMore: fetchedCursor !== null
           });
         }
       } catch (err) {
         console.error('Error fetching comments:', err);
-        // Handle different error types
         let errorMessage = 'Failed to load comments';
         if (err instanceof Error) {
           errorMessage = err.message;
         } else if (typeof err === 'object' && err !== null) {
-          // Try to extract message from Supabase error object
           const errorObj = err as any;
           errorMessage = errorObj.message || errorObj.details || errorObj.hint || JSON.stringify(err);
         }
@@ -464,7 +387,45 @@ export default function MovieCommentsList({
     if (movieId) {
       fetchComments();
     }
-  }, [movieId, mode]);
+  }, [movieId, mode, refreshKey]);
+
+  // Load more comments
+  const handleLoadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({
+        movieId,
+        limit: '5',
+        cursorCreatedAt: nextCursor.created_at,
+        cursorId: nextCursor.id,
+      });
+
+      const response = await fetch(`/api/comments/page?${params.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to load more comments: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const { comments: newComments, nextCursor: newCursor } = data;
+
+      if (!Array.isArray(newComments)) {
+        throw new Error('Invalid response format');
+      }
+
+      // Append new comments to existing ones
+      setComments(prev => [...prev, ...newComments]);
+      setNextCursor(newCursor);
+      setHasMore(newCursor !== null);
+    } catch (err) {
+      console.error('Error loading more comments:', err);
+      alert(err instanceof Error ? err.message : 'Failed to load more comments');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Build threaded structure
   const buildThreads = (comments: Comment[]): Array<Comment & { replies: Comment[] }> => {
@@ -583,20 +544,33 @@ export default function MovieCommentsList({
           <p className="text-slate-600 dark:text-slate-400">No comments yet. Be the first to comment!</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {threadedComments.map((comment) => (
-            <CommentCard
-              key={comment.id}
-              comment={comment}
-              replies={comment.replies}
-              depth={0}
-              onReply={onReply}
-              renderQuoteReferences={renderQuoteReferences}
-              isAdmin={isAdmin}
-              onRefresh={handleRefresh}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-4">
+            {threadedComments.map((comment) => (
+              <CommentCard
+                key={comment.id}
+                comment={comment}
+                replies={comment.replies}
+                depth={0}
+                onReply={onReply}
+                renderQuoteReferences={renderQuoteReferences}
+                isAdmin={isAdmin}
+                onRefresh={handleRefresh}
+              />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loadingMore ? 'Loading...' : 'Show more'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
