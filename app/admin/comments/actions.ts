@@ -108,3 +108,65 @@ export async function deleteComment(prevState: string | null, formData: FormData
     return error instanceof Error ? error.message : 'An unexpected error occurred';
   }
 }
+
+export async function toggleBanUser(prevState: string | null, formData: FormData): Promise<string | null> {
+  try {
+    const userId = formData.get('userId') as string;
+    
+    if (!userId) {
+      return 'User ID is required';
+    }
+    
+    const supabase = await createServerSupabase();
+    
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return 'Not authenticated';
+    }
+    
+    // Check if user is admin
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+    
+    if (profileError || !userProfile) {
+      return 'User profile not found';
+    }
+    
+    if (userProfile.is_admin !== true) {
+      return 'Not authorized';
+    }
+    
+    // Get current ban status
+    const { data: targetUser, error: targetError } = await supabase
+      .from('users')
+      .select('is_banned')
+      .eq('id', userId)
+      .single();
+    
+    if (targetError || !targetUser) {
+      return 'Target user not found';
+    }
+    
+    // Toggle ban status
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        is_banned: !targetUser.is_banned,
+      })
+      .eq('id', userId);
+    
+    if (updateError) {
+      return `Failed to toggle ban status: ${updateError.message}`;
+    }
+    
+    revalidatePath('/admin/comments');
+    return 'OK'; // Return success token instead of null
+  } catch (error) {
+    return error instanceof Error ? error.message : 'An unexpected error occurred';
+  }
+}

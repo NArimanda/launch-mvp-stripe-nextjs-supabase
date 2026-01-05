@@ -90,3 +90,48 @@ export async function deleteCommentAction(commentId: string): Promise<{ error?: 
   return {};
 }
 
+export async function toggleBanUserAction(userId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+
+  // Get current user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: 'Not authenticated' };
+  }
+
+  // Check admin status
+  const isAdmin = await checkAdmin(user.id);
+  if (!isAdmin) {
+    return { error: 'Not authorized' };
+  }
+
+  // Get current ban status using admin client
+  const { data: targetUser, error: targetError } = await supabaseAdmin
+    .from('users')
+    .select('is_banned')
+    .eq('id', userId)
+    .single();
+
+  if (targetError || !targetUser) {
+    return { error: 'Target user not found' };
+  }
+
+  // Toggle ban status using admin client
+  const { error: updateError } = await supabaseAdmin
+    .from('users')
+    .update({
+      is_banned: !targetUser.is_banned,
+    })
+    .eq('id', userId);
+
+  if (updateError) {
+    console.error('Error toggling ban status:', updateError);
+    return { error: updateError.message };
+  }
+
+  // Revalidate admin page
+  revalidatePath('/admin/comments');
+  return {};
+}
+

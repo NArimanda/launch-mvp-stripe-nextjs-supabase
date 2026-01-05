@@ -5,7 +5,7 @@ import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
-import { approveCommentAction, deleteCommentAction } from '@/app/api/comments/actions';
+import { approveCommentAction, deleteCommentAction, toggleBanUserAction } from '@/app/api/comments/actions';
 
 interface Comment {
   id: string;
@@ -90,6 +90,27 @@ function CommentCard({
   onRefresh?: () => void;
 }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [userIsBanned, setUserIsBanned] = useState<boolean | null>(null);
+  const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
+
+  // Fetch ban status and admin status when component mounts (only if admin)
+  useEffect(() => {
+    if (isAdmin && comment.user_id) {
+      const fetchUserStatus = async () => {
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_banned, is_admin')
+          .eq('id', comment.user_id)
+          .single();
+        
+        if (!error && data) {
+          setUserIsBanned(data.is_banned ?? false);
+          setUserIsAdmin(data.is_admin ?? false);
+        }
+      };
+      fetchUserStatus();
+    }
+  }, [isAdmin, comment.user_id]);
 
   const handleApprove = async () => {
     setActionLoading('approve');
@@ -115,6 +136,21 @@ function CommentCard({
     }
     setActionLoading(null);
   };
+
+  const handleToggleBan = async () => {
+    if (!comment.user_id) return;
+    
+    setActionLoading('ban');
+    const result = await toggleBanUserAction(comment.user_id);
+    if (result.error) {
+      alert(`Failed to toggle ban: ${result.error}`);
+    } else {
+      // Update local state
+      setUserIsBanned(prev => prev !== null ? !prev : null);
+      onRefresh?.();
+    }
+    setActionLoading(null);
+  };
   return (
     <div className={`${depth > 0 ? 'mt-4 border-l-2 border-slate-200 dark:border-slate-700 pl-4' : ''}`}>
       <div className={`bg-white dark:bg-neutral-dark rounded-lg p-4 shadow-sm border ${
@@ -127,6 +163,11 @@ function CommentCard({
             <span className="font-semibold text-slate-900 dark:text-white">
               {comment.username || 'Anonymous'}
             </span>
+            {isAdmin && userIsBanned && (
+              <span className="text-xs font-semibold px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
+                BANNED
+              </span>
+            )}
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {formatDate(comment.created_at)}
             </span>
@@ -181,6 +222,24 @@ function CommentCard({
                   )}
                 </button>
               ) : null}
+              {/* Only show ban button if comment author is not an admin */}
+              {!userIsAdmin && (
+                <button
+                  onClick={handleToggleBan}
+                  disabled={actionLoading !== null || userIsBanned === null}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-white text-sm font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                    userIsBanned
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {actionLoading === 'ban' ? (
+                    'Processing...'
+                  ) : (
+                    userIsBanned ? 'Unban User' : 'Ban User'
+                  )}
+                </button>
+              )}
               <button
                 onClick={handleDelete}
                 disabled={actionLoading !== null}

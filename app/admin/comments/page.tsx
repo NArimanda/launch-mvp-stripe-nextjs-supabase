@@ -18,6 +18,7 @@ interface Comment {
   movie_title?: string | null;
   movie_slug?: string | null;
   username?: string | null;
+  user_is_banned?: boolean;
 }
 
 export default async function AdminCommentsPage() {
@@ -115,23 +116,44 @@ export default async function AdminCommentsPage() {
     (moviesData || []).map((m: { id: string; title: string; slug: string }) => [m.id, { title: m.title, slug: m.slug }])
   );
 
-  // Fetch usernames
+  // Fetch usernames and ban status
   const userIds = [...new Set(comments.map((c: { user_id: string }) => c.user_id))];
-  const { data: usersData } = await supabase
+  const { data: usersData, error: usersError } = await supabase
     .from('users')
-    .select('id, username')
+    .select('id, username, is_banned')
     .in('id', userIds);
 
-  const userMap = new Map((usersData || []).map((u: { id: string; username: string | null }) => [u.id, u.username]));
+  // Handle errors when fetching user data (e.g., if migration hasn't been run)
+  if (usersError) {
+    console.error('Error fetching user data (ban status):', usersError);
+    // Check if error is due to missing column
+    if (usersError.message?.includes('column') && usersError.message?.includes('is_banned')) {
+      console.error('⚠️ The is_banned column does not exist. Please run the add_shadow_ban.sql migration.');
+    } else if (usersError.message?.includes('permission') || usersError.message?.includes('policy')) {
+      console.error('⚠️ RLS policy error. Admins may not have permission to read is_banned. Check RLS policies.');
+    }
+  }
 
-  // Enrich comments with movie titles and usernames
+  // Create user map with fallback for missing data
+  const userMap = new Map(
+    (usersData || []).map((u: { id: string; username: string | null; is_banned: boolean | null }) => [
+      u.id,
+      { username: u.username, is_banned: u.is_banned ?? false }
+    ])
+  );
+
+  // Enrich comments with movie titles, usernames, and ban status
+  // If user data fetch failed, default to false for is_banned
   const enrichedComments: Comment[] = comments.map((comment: any) => {
     const movie = movieMap.get(comment.movie_id);
+    const userInfo = userMap.get(comment.user_id);
     return {
       ...comment,
       movie_title: movie?.title || null,
       movie_slug: movie?.slug || null,
-      username: userMap.get(comment.user_id) || null,
+      username: userInfo?.username || null,
+      // Default to false if userInfo is missing (e.g., due to query error)
+      user_is_banned: userInfo?.is_banned ?? false,
     };
   });
 
