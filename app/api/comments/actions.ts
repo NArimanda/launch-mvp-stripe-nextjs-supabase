@@ -73,6 +73,35 @@ export async function deleteCommentAction(commentId: string): Promise<{ error?: 
     return { error: 'Not authorized' };
   }
 
+  // Fetch comment to check for image_path before deletion
+  const { data: comment, error: fetchError } = await supabaseAdmin
+    .from('movie_comments')
+    .select('image_path')
+    .eq('id', commentId)
+    .single();
+
+  if (fetchError) {
+    console.error('Error fetching comment before deletion:', fetchError);
+    // Continue with deletion even if fetch fails
+  }
+
+  // If comment has an image, delete it from storage (best effort)
+  if (comment?.image_path) {
+    try {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from('comment-images')
+        .remove([comment.image_path]);
+
+      if (storageError) {
+        console.error('Error deleting comment image from storage:', storageError);
+        // Don't fail comment deletion if storage delete fails
+      }
+    } catch (storageErr) {
+      console.error('Error deleting comment image from storage:', storageErr);
+      // Don't fail comment deletion if storage delete fails
+    }
+  }
+
   // Delete the comment using admin client to bypass RLS
   const { error: deleteError } = await supabaseAdmin
     .from('movie_comments')

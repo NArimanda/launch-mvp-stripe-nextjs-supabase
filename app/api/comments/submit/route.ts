@@ -3,8 +3,10 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
 
+
 export async function POST(request: Request) {
   try {
+    // Parse JSON body (images are now uploaded directly from client)
     const body = await request.json();
     const { user_id, movie_id, parent_id, body: commentBody, position_market_type, position_selected_range, position_points } = body;
 
@@ -37,8 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Insert comment directly using service role client (bypasses RLS)
-    // User is already validated above, so this is secure
+    // Step 1: Insert comment first (without image fields)
     const { data, error } = await supabaseAdmin
       .from('movie_comments')
       .insert({

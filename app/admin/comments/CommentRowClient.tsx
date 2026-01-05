@@ -4,6 +4,7 @@ import { useFormStatus, useFormState } from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { approveComment, deleteComment, toggleBanUser } from './actions';
+import { supabase } from '@/utils/supabase';
 
 interface Comment {
   id: string;
@@ -22,6 +23,9 @@ interface Comment {
   movie_slug?: string | null;
   username?: string | null;
   user_is_banned?: boolean;
+  image_path?: string | null;
+  image_mime?: string | null;
+  image_size?: number | null;
 }
 
 interface CommentRowClientProps {
@@ -166,6 +170,7 @@ export default function CommentRowClient({
   isPending,
 }: CommentRowClientProps) {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const isBanned = comment.user_is_banned ?? false;
 
   // Show toast and auto-hide after 3 seconds
@@ -177,6 +182,32 @@ export default function CommentRowClient({
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  // Generate signed URL for comment image
+  useEffect(() => {
+    if (comment.image_path) {
+      const generateSignedUrl = async () => {
+        try {
+          const { data, error } = await supabase.storage
+            .from('comment-images')
+            .createSignedUrl(comment.image_path!, 3600); // 1 hour expiry
+
+          if (error) {
+            console.error('Error generating signed URL:', error);
+            setImageUrl(null);
+          } else if (data) {
+            setImageUrl(data.signedUrl);
+          }
+        } catch (err) {
+          console.error('Error generating signed URL:', err);
+          setImageUrl(null);
+        }
+      };
+      generateSignedUrl();
+    } else {
+      setImageUrl(null);
+    }
+  }, [comment.image_path]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -275,6 +306,21 @@ export default function CommentRowClient({
         <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
           {comment.body}
         </div>
+        
+        {/* Comment Image */}
+        {imageUrl && (
+          <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3">
+            <img
+              src={imageUrl}
+              alt="Comment attachment"
+              className="max-w-full max-h-96 rounded-lg border border-slate-300 dark:border-slate-600 object-contain"
+              onError={() => {
+                // Hide image on error
+                setImageUrl(null);
+              }}
+            />
+          </div>
+        )}
       </div>
 
     {/* Toast Notification */}

@@ -13,6 +13,9 @@ interface Comment {
   position_market_type?: string | null;
   position_selected_range?: string | null;
   position_points?: number | null;
+  image_path?: string | null;
+  image_mime?: string | null;
+  image_size?: number | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -74,7 +77,10 @@ export async function GET(request: NextRequest) {
         created_at,
         position_market_type,
         position_selected_range,
-        position_points
+        position_points,
+        image_path,
+        image_mime,
+        image_size
       `)
       .eq('movie_id', movieId)
       .eq('approved', true) // Only approved comments for pagination
@@ -145,6 +151,9 @@ export async function GET(request: NextRequest) {
         position_market_type: comment.position_market_type || null,
         position_selected_range: comment.position_selected_range || null,
         position_points: comment.position_points || null,
+        image_path: comment.image_path || null,
+        image_mime: comment.image_mime || null,
+        image_size: comment.image_size || null,
       };
     });
 
@@ -175,7 +184,10 @@ export async function GET(request: NextRequest) {
           created_at,
           position_market_type,
           position_selected_range,
-          position_points
+          position_points,
+          image_path,
+          image_mime,
+          image_size
         `)
         .eq('movie_id', movieId)
         .eq('approved', false)
@@ -214,6 +226,9 @@ export async function GET(request: NextRequest) {
             position_market_type: comment.position_market_type || null,
             position_selected_range: comment.position_selected_range || null,
             position_points: comment.position_points || null,
+            image_path: comment.image_path || null,
+            image_mime: comment.image_mime || null,
+            image_size: comment.image_size || null,
           };
         });
 
@@ -235,7 +250,10 @@ export async function GET(request: NextRequest) {
           created_at,
           position_market_type,
           position_selected_range,
-          position_points
+          position_points,
+          image_path,
+          image_mime,
+          image_size
         `)
         .eq('movie_id', movieId)
         .eq('user_id', userId)
@@ -275,6 +293,9 @@ export async function GET(request: NextRequest) {
             position_market_type: comment.position_market_type || null,
             position_selected_range: comment.position_selected_range || null,
             position_points: comment.position_points || null,
+            image_path: comment.image_path || null,
+            image_mime: comment.image_mime || null,
+            image_size: comment.image_size || null,
           };
         });
 
@@ -356,6 +377,9 @@ export async function GET(request: NextRequest) {
             position_market_type: reply.position_market_type || null,
             position_selected_range: reply.position_selected_range || null,
             position_points: reply.position_points || null,
+            image_path: reply.image_path || null,
+            image_mime: reply.image_mime || null,
+            image_size: reply.image_size || null,
           };
         });
 

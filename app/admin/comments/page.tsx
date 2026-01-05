@@ -19,6 +19,9 @@ interface Comment {
   movie_slug?: string | null;
   username?: string | null;
   user_is_banned?: boolean;
+  image_path?: string | null;
+  image_mime?: string | null;
+  image_size?: number | null;
 }
 
 export default async function AdminCommentsPage() {
@@ -87,7 +90,7 @@ export default async function AdminCommentsPage() {
   // Fetch all comments (no approved filter) - admin should see all
   const { data: commentsData, error: commentsError } = await supabase
     .from('movie_comments')
-    .select('id, movie_id, user_id, parent_id, body, approved, created_at, approved_at, approved_by, position_market_type, position_selected_range, position_points')
+    .select('id, movie_id, user_id, parent_id, body, approved, created_at, approved_at, approved_by, position_market_type, position_selected_range, position_points, image_path, image_mime, image_size')
     .order('created_at', { ascending: false });
 
   if (commentsError) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -20,6 +20,9 @@ interface Comment {
   position_market_type?: string | null;
   position_selected_range?: string | null;
   position_points?: number | null;
+  image_path?: string | null;
+  image_mime?: string | null;
+  image_size?: number | null;
 }
 
 interface MovieCommentsListProps {
@@ -92,6 +95,7 @@ function CommentCard({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [userIsBanned, setUserIsBanned] = useState<boolean | null>(null);
   const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // Fetch ban status and admin status when component mounts (only if admin)
   useEffect(() => {
@@ -111,6 +115,32 @@ function CommentCard({
       fetchUserStatus();
     }
   }, [isAdmin, comment.user_id]);
+
+  // Generate signed URL for comment image
+  useEffect(() => {
+    if (comment.image_path) {
+      const generateSignedUrl = async () => {
+        try {
+          const { data, error } = await supabase.storage
+            .from('comment-images')
+            .createSignedUrl(comment.image_path!, 3600); // 1 hour expiry
+
+          if (error) {
+            console.error('Error generating signed URL:', error);
+            setImageUrl(null);
+          } else if (data) {
+            setImageUrl(data.signedUrl);
+          }
+        } catch (err) {
+          console.error('Error generating signed URL:', err);
+          setImageUrl(null);
+        }
+      };
+      generateSignedUrl();
+    } else {
+      setImageUrl(null);
+    }
+  }, [comment.image_path]);
 
   const handleApprove = async () => {
     setActionLoading('approve');
@@ -182,6 +212,21 @@ function CommentCard({
         <div className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap">
           {renderQuoteReferences ? renderQuoteReferences(comment.body) : comment.body}
         </div>
+        
+        {/* Comment Image */}
+        {imageUrl && (
+          <div className="mb-3">
+            <img
+              src={imageUrl}
+              alt="Comment attachment"
+              className="max-w-full max-h-96 rounded-lg border border-slate-300 dark:border-slate-600 object-contain"
+              onError={() => {
+                // Hide image on error
+                setImageUrl(null);
+              }}
+            />
+          </div>
+        )}
         
         {/* Position Snapshot Display */}
         {comment.position_market_type && comment.position_selected_range && typeof comment.position_points === 'number' && (
@@ -299,11 +344,13 @@ export default function MovieCommentsList({
   const [nextCursor, setNextCursor] = useState<{ created_at: string; id: string } | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const commentsRef = useRef<Comment[]>([]);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
     setNextCursor(null);
     setHasMore(false);
+    commentsRef.current = [];
     router.refresh();
   };
 
@@ -355,6 +402,7 @@ export default function MovieCommentsList({
         }
 
         setComments(fetchedComments);
+        commentsRef.current = fetchedComments;
         setNextCursor(fetchedCursor);
         setHasMore(fetchedCursor !== null);
         
@@ -415,10 +463,25 @@ export default function MovieCommentsList({
         throw new Error('Invalid response format');
       }
 
-      // Append new comments to existing ones
-      setComments(prev => [...prev, ...newComments]);
+      // Deduplicate comments by ID before appending
+      // This prevents duplicate keys when replies are already in the existing comments
+      // Use ref to get current comments synchronously
+      const existingIds = new Set(commentsRef.current.map(c => c.id));
+      const uniqueNewComments = newComments.filter(c => !existingIds.has(c.id));
+      
+      // Update comments with unique new ones
+      if (uniqueNewComments.length > 0) {
+        const updatedComments = [...commentsRef.current, ...uniqueNewComments];
+        setComments(updatedComments);
+        commentsRef.current = updatedComments;
+      }
+      
+      // Update cursor and hasMore
       setNextCursor(newCursor);
-      setHasMore(newCursor !== null);
+      // Set hasMore to false if:
+      // 1. No new cursor (API indicates no more comments), OR
+      // 2. We got no new unique comments (all were duplicates, meaning we've seen everything)
+      setHasMore(newCursor !== null && uniqueNewComments.length > 0);
     } catch (err) {
       console.error('Error loading more comments:', err);
       alert(err instanceof Error ? err.message : 'Failed to load more comments');
@@ -429,16 +492,21 @@ export default function MovieCommentsList({
 
   // Build threaded structure
   const buildThreads = (comments: Comment[]): Array<Comment & { replies: Comment[] }> => {
+    // Deduplicate comments by ID first (defensive measure)
+    const uniqueComments = Array.from(
+      new Map(comments.map(c => [c.id, c])).values()
+    );
+
     const commentMap = new Map<string, Comment & { replies: Comment[] }>();
     const rootComments: Array<Comment & { replies: Comment[] }> = [];
 
     // First pass: create map of all comments with empty replies array
-    comments.forEach(comment => {
+    uniqueComments.forEach(comment => {
       commentMap.set(comment.id, { ...comment, replies: [] });
     });
 
     // Second pass: build tree structure
-    comments.forEach(comment => {
+    uniqueComments.forEach(comment => {
       const commentWithReplies = commentMap.get(comment.id)!;
       if (comment.parent_id) {
         const parent = commentMap.get(comment.parent_id);

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import MovieCommentsList from './MovieCommentsList';
-import { X, Send, AlertCircle } from 'lucide-react';
+import { X, Send, AlertCircle, Image, XCircle } from 'lucide-react';
 
 interface PendingComment {
   id: string;
@@ -19,6 +19,9 @@ interface PendingComment {
   position_market_type?: string | null;
   position_selected_range?: string | null;
   position_points?: number | null;
+  image_path?: string | null;
+  image_mime?: string | null;
+  image_size?: number | null;
 }
 
 interface MovieCommentsProps {
@@ -38,6 +41,9 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
   const [pendingComments, setPendingComments] = useState<PendingComment[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Get current user session and admin status
   useEffect(() => {
@@ -126,6 +132,55 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
     document.getElementById('comment-composer')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSelectedImage(null);
+      setImagePreview(null);
+      setImageError(null);
+      return;
+    }
+
+    // Validate file size (3MB max)
+    if (file.size > 3 * 1024 * 1024) {
+      setImageError('Image size must be less than 3MB');
+      setSelectedImage(null);
+      setImagePreview(null);
+      return;
+    }
+
+    // Validate MIME type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageError('Image must be JPEG, PNG, or WebP');
+      setSelectedImage(null);
+      setImagePreview(null);
+      return;
+    }
+
+    // Clear any previous errors
+    setImageError(null);
+    setSelectedImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setImageError(null);
+    // Reset file input
+    const fileInput = document.getElementById('comment-image-input') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
 
   const handleSubmitComment = async () => {
     if (!user || !username) return;
@@ -134,6 +189,21 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
     setIsSubmitting(true);
 
     try {
+      // Validate image file type before proceeding
+      if (selectedImage) {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(selectedImage.type)) {
+          alert('Image must be JPEG, PNG, or WebP');
+          setIsSubmitting(false);
+          return;
+        }
+        if (selectedImage.size > 3 * 1024 * 1024) {
+          alert('Image size must be less than 3MB');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Fetch markets for this movie
       const { data: marketsData, error: marketsError } = await supabase
         .from('markets')
@@ -171,7 +241,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         }
       }
 
-      // Insert comment via API route
+      // Step 1: Create comment first (without image)
       const response = await fetch('/api/comments/submit', {
         method: 'POST',
         headers: {
@@ -179,7 +249,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         },
         credentials: 'include',
         body: JSON.stringify({
-          user_id: user.id, // Pass user ID from client
+          user_id: user.id,
           movie_id: movieId,
           parent_id: replyToId,
           body: commentBody.trim(),
@@ -199,6 +269,69 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       }
 
       const data = result.data;
+      const commentId = data.id;
+
+      // Step 2: Upload image directly from client if provided (using real comment ID)
+      if (selectedImage) {
+        console.log('Uploading image directly from client:', {
+          file: selectedImage instanceof File,
+          type: selectedImage?.type,
+          fileObject: selectedImage
+        });
+
+        // Get file extension
+        const ext = selectedImage.name.split('.').pop() || 
+                   (selectedImage.type === 'image/jpeg' ? 'jpg' : 
+                    selectedImage.type === 'image/png' ? 'png' : 
+                    selectedImage.type === 'image/webp' ? 'webp' : 'jpg');
+        const storagePath = `${user.id}/${commentId}.${ext}`;
+
+        // Debug logs before upload (as requested)
+        console.log('File check before upload:', {
+          isFile: selectedImage instanceof File,
+          isBlob: selectedImage instanceof Blob,
+          type: selectedImage.type,
+          file: selectedImage
+        });
+        console.log(selectedImage instanceof File, selectedImage?.type, selectedImage);
+
+        // Upload directly using authenticated Supabase client
+        // This uploads a real File/Blob object, NOT JSON
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('comment-images')
+          .upload(storagePath, selectedImage, {
+            contentType: selectedImage.type, // Explicitly set content type to image/*
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Image upload error:', uploadError);
+          alert(`Comment submitted, but image upload failed: ${uploadError.message}`);
+          // Comment is already created, so we continue
+        } else {
+          console.log('Image uploaded successfully:', uploadData);
+          
+          // Step 3: Update comment with image metadata
+          const updateResponse = await fetch('/api/comments/update-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              comment_id: commentId,
+              image_path: storagePath,
+              image_mime: selectedImage.type,
+              image_size: selectedImage.size
+            }),
+          });
+
+          if (!updateResponse.ok) {
+            console.error('Failed to update comment with image metadata');
+            // Image is uploaded but metadata update failed - not critical
+          }
+        }
+      }
 
       // Add to pending comments optimistically
       const pendingComment: PendingComment = {
@@ -221,6 +354,14 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       // Reset form
       setCommentBody('');
       setReplyToId(null);
+      setSelectedImage(null);
+      setImagePreview(null);
+      setImageError(null);
+      // Reset file input
+      const fileInput = document.getElementById('comment-image-input') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     } catch (err) {
       console.error('Error submitting comment:', err);
       alert('Failed to submit comment. Please try again.');
@@ -349,6 +490,56 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
               rows={4}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
+            
+            {/* Image Upload Section */}
+            <div className="mt-3">
+              <label
+                htmlFor="comment-image-input"
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <Image className="h-4 w-4" />
+                <span>Add Image (optional)</span>
+              </label>
+              <input
+                id="comment-image-input"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              
+              {imageError && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <AlertCircle className="h-4 w-4" />
+                  {imageError}
+                </p>
+              )}
+              
+              {imagePreview && (
+                <div className="mt-3 relative inline-block">
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-w-xs max-h-48 rounded-lg border border-slate-300 dark:border-slate-600"
+                    />
+                    <button
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-lg"
+                      type="button"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {selectedImage?.name} ({(selectedImage?.size || 0) / 1024 / 1024 < 1 
+                      ? `${Math.round((selectedImage?.size || 0) / 1024)} KB`
+                      : `${((selectedImage?.size || 0) / 1024 / 1024).toFixed(2)} MB`})
+                  </p>
+                </div>
+              )}
+            </div>
+            
             <div className="mt-3 flex items-center justify-between">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Comments require approval before being displayed
