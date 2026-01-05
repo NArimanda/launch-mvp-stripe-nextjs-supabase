@@ -44,6 +44,20 @@ export async function GET(request: NextRequest) {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const userId = authUser?.id || null;
 
+    // Check if user is admin
+    let isAdmin = false;
+    if (userId) {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', userId)
+        .single();
+      
+      if (!profileError && userProfile) {
+        isAdmin = userProfile.is_admin === true;
+      }
+    }
+
     // Build query for root-level APPROVED comments only (parent_id IS NULL)
     // Order by created_at DESC, id DESC (newest first)
     // Note: We don't join users here to avoid relationship ambiguity
@@ -144,9 +158,71 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Fetch user's own pending comments separately (if authenticated)
+    // Fetch pending comments separately (if authenticated)
     // These are NOT counted in the pagination limit
-    if (userId) {
+    // Admins see ALL pending comments, regular users see only their own
+    if (isAdmin) {
+      // Admin: Fetch ALL pending comments from all users
+      const { data: pendingCommentsData, error: pendingError } = await supabase
+        .from('movie_comments')
+        .select(`
+          id,
+          movie_id,
+          user_id,
+          parent_id,
+          body,
+          approved,
+          created_at,
+          position_market_type,
+          position_selected_range,
+          position_points
+        `)
+        .eq('movie_id', movieId)
+        .eq('approved', false)
+        .is('parent_id', null) // Only root-level pending comments
+        .order('created_at', { ascending: false });
+
+      if (!pendingError && pendingCommentsData && pendingCommentsData.length > 0) {
+        // Fetch usernames for pending comments
+        const pendingUserIds = [...new Set(pendingCommentsData.map((c: any) => c.user_id).filter(Boolean))];
+        const pendingUserMap = new Map<string, string | null>();
+        
+        if (pendingUserIds.length > 0) {
+          const { data: pendingUsersData, error: pendingUsersError } = await supabase
+            .from('users')
+            .select('id, username')
+            .in('id', pendingUserIds);
+
+          if (!pendingUsersError && pendingUsersData) {
+            pendingUsersData.forEach((u: { id: string; username: string | null }) => {
+              pendingUserMap.set(u.id, u.username);
+            });
+          }
+        }
+
+        // Transform pending comments and add to the array
+        const transformedPendingComments: Comment[] = pendingCommentsData.map((comment: any) => {
+          return {
+            id: comment.id,
+            movie_id: comment.movie_id,
+            user_id: comment.user_id,
+            parent_id: comment.parent_id,
+            body: comment.body,
+            approved: comment.approved,
+            created_at: comment.created_at,
+            username: pendingUserMap.get(comment.user_id) || null,
+            position_market_type: comment.position_market_type || null,
+            position_selected_range: comment.position_selected_range || null,
+            position_points: comment.position_points || null,
+          };
+        });
+
+        // Add pending comments to the transformed comments array
+        // They will be sorted by the buildThreads function in the component
+        transformedComments.push(...transformedPendingComments);
+      }
+    } else if (userId) {
+      // Regular user: Fetch only their own pending comments
       const { data: pendingCommentsData, error: pendingError } = await supabase
         .from('movie_comments')
         .select(`
@@ -229,10 +305,19 @@ export async function GET(request: NextRequest) {
         `)
         .in('parent_id', rootCommentIds);
 
-      // Filter replies: only approved ones, or user's own pending ones (if authenticated)
-      if (userId) {
+      // Filter replies based on user role:
+      // - Admins: see all replies (approved and pending)
+      // - Regular users: see approved replies OR their own pending replies
+      // - Unauthenticated: see only approved replies
+      if (isAdmin) {
+        // Admin: Fetch all replies (no filter needed - RLS will handle visibility)
+        // We can remove the approved filter entirely or use .or() to be explicit
+        repliesQuery = repliesQuery; // No filter - admins see everything via RLS
+      } else if (userId) {
+        // Regular user: approved OR their own pending
         repliesQuery = repliesQuery.or(`approved.eq.true,user_id.eq.${userId}`);
       } else {
+        // Unauthenticated: only approved
         repliesQuery = repliesQuery.eq('approved', true);
       }
 
