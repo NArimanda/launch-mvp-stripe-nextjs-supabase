@@ -305,88 +305,90 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Now fetch all replies for these root comments
-    // This ensures threading still works correctly
+    // Now fetch ALL replies (nested at any depth) for this movie
+    // This ensures threading works correctly at any depth
     // Only fetch approved replies OR replies from the current user (if authenticated)
-    if (transformedComments.length > 0) {
-      const rootCommentIds = transformedComments.map(c => c.id);
-      let repliesQuery = supabase
-        .from('movie_comments')
-        .select(`
-          id,
-          movie_id,
-          user_id,
-          parent_id,
-          body,
-          approved,
-          created_at,
-          position_market_type,
-          position_selected_range,
-          position_points
-        `)
-        .in('parent_id', rootCommentIds);
+    // Fetch all comments that have a parent_id (i.e., all replies at any depth)
+    let repliesQuery = supabase
+      .from('movie_comments')
+      .select(`
+        id,
+        movie_id,
+        user_id,
+        parent_id,
+        body,
+        approved,
+        created_at,
+        position_market_type,
+        position_selected_range,
+        position_points,
+        image_path,
+        image_mime,
+        image_size
+      `)
+      .eq('movie_id', movieId)
+      .not('parent_id', 'is', null); // Get all comments that have a parent (i.e., all replies at any depth)
 
-      // Filter replies based on user role:
-      // - Admins: see all replies (approved and pending)
-      // - Regular users: see approved replies OR their own pending replies
-      // - Unauthenticated: see only approved replies
-      if (isAdmin) {
-        // Admin: Fetch all replies (no filter needed - RLS will handle visibility)
-        // We can remove the approved filter entirely or use .or() to be explicit
-        repliesQuery = repliesQuery; // No filter - admins see everything via RLS
-      } else if (userId) {
-        // Regular user: approved OR their own pending
-        repliesQuery = repliesQuery.or(`approved.eq.true,user_id.eq.${userId}`);
-      } else {
-        // Unauthenticated: only approved
-        repliesQuery = repliesQuery.eq('approved', true);
-      }
+    // Filter replies based on user role:
+    // - Admins: see all replies (approved and pending)
+    // - Regular users: see approved replies OR their own pending replies
+    // - Unauthenticated: see only approved replies
+    if (isAdmin) {
+      // Admin: Fetch all replies (no filter needed - RLS will handle visibility)
+      // We can remove the approved filter entirely or use .or() to be explicit
+      repliesQuery = repliesQuery; // No filter - admins see everything via RLS
+    } else if (userId) {
+      // Regular user: approved OR their own pending
+      repliesQuery = repliesQuery.or(`approved.eq.true,user_id.eq.${userId}`);
+    } else {
+      // Unauthenticated: only approved
+      repliesQuery = repliesQuery.eq('approved', true);
+    }
 
-      const { data: repliesData, error: repliesError } = await repliesQuery
-        .order('created_at', { ascending: true }); // Replies ordered oldest first
+    const { data: repliesData, error: repliesError } = await repliesQuery
+      .order('created_at', { ascending: true }); // Replies ordered oldest first
 
-      if (!repliesError && repliesData) {
-        // Fetch usernames for replies
-        const replyUserIds = [...new Set(repliesData.map((r: any) => r.user_id).filter(Boolean))];
-        const replyUserMap = new Map<string, string | null>();
-        
-        if (replyUserIds.length > 0) {
-          const { data: replyUsersData, error: replyUsersError } = await supabase
-            .from('users')
-            .select('id, username')
-            .in('id', replyUserIds);
+    if (!repliesError && repliesData) {
+      // Fetch usernames for replies
+      const replyUserIds = [...new Set(repliesData.map((r: any) => r.user_id).filter(Boolean))];
+      const replyUserMap = new Map<string, string | null>();
+      
+      if (replyUserIds.length > 0) {
+        const { data: replyUsersData, error: replyUsersError } = await supabase
+          .from('users')
+          .select('id, username')
+          .in('id', replyUserIds);
 
-          if (!replyUsersError && replyUsersData) {
-            replyUsersData.forEach((u: { id: string; username: string | null }) => {
-              replyUserMap.set(u.id, u.username);
-            });
-          }
+        if (!replyUsersError && replyUsersData) {
+          replyUsersData.forEach((u: { id: string; username: string | null }) => {
+            replyUserMap.set(u.id, u.username);
+          });
         }
-
-        // Transform replies
-        const transformedReplies: Comment[] = repliesData.map((reply: any) => {
-          return {
-            id: reply.id,
-            movie_id: reply.movie_id,
-            user_id: reply.user_id,
-            parent_id: reply.parent_id,
-            body: reply.body,
-            approved: reply.approved,
-            created_at: reply.created_at,
-            username: replyUserMap.get(reply.user_id) || null,
-            position_market_type: reply.position_market_type || null,
-            position_selected_range: reply.position_selected_range || null,
-            position_points: reply.position_points || null,
-            image_path: reply.image_path || null,
-            image_mime: reply.image_mime || null,
-            image_size: reply.image_size || null,
-          };
-        });
-
-        // Append replies to the comments array
-        // The buildThreads function in the component will organize them properly
-        transformedComments.push(...transformedReplies);
       }
+
+      // Transform replies
+      const transformedReplies: Comment[] = repliesData.map((reply: any) => {
+        return {
+          id: reply.id,
+          movie_id: reply.movie_id,
+          user_id: reply.user_id,
+          parent_id: reply.parent_id,
+          body: reply.body,
+          approved: reply.approved,
+          created_at: reply.created_at,
+          username: replyUserMap.get(reply.user_id) || null,
+          position_market_type: reply.position_market_type || null,
+          position_selected_range: reply.position_selected_range || null,
+          position_points: reply.position_points || null,
+          image_path: reply.image_path || null,
+          image_mime: reply.image_mime || null,
+          image_size: reply.image_size || null,
+        };
+      });
+
+      // Append replies to the comments array
+      // The buildThreads function in the component will organize them properly
+      transformedComments.push(...transformedReplies);
     }
 
     return NextResponse.json({

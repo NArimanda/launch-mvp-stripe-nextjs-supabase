@@ -307,18 +307,22 @@ function CommentCard({
       {/* Render nested replies */}
       {replies.length > 0 && (
         <div className="mt-2">
-          {replies.map((reply) => (
-            <CommentCard
-              key={reply.id}
-              comment={reply}
-              replies={[]}
-              depth={depth + 1}
-              onReply={onReply}
-              renderQuoteReferences={renderQuoteReferences}
-              isAdmin={isAdmin}
-              onRefresh={onRefresh}
-            />
-          ))}
+          {replies.map((reply) => {
+            // Type assertion: replies come from buildThreads which adds replies property
+            const replyWithReplies = reply as Comment & { replies: Comment[] };
+            return (
+              <CommentCard
+                key={reply.id}
+                comment={reply}
+                replies={replyWithReplies.replies || []}
+                depth={depth + 1}
+                onReply={onReply}
+                renderQuoteReferences={renderQuoteReferences}
+                isAdmin={isAdmin}
+                onRefresh={onRefresh}
+              />
+            );
+          })}
         </div>
       )}
     </div>
