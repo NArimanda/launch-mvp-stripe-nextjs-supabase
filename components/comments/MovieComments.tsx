@@ -241,22 +241,34 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         }
       }
 
-      // Step 1: Create comment first (without image)
+      // Create FormData with all fields
+      const formData = new FormData();
+      formData.append('user_id', user.id);
+      formData.append('movie_id', movieId);
+      if (replyToId) {
+        formData.append('parent_id', replyToId);
+      }
+      formData.append('body', commentBody.trim());
+      if (positionMarketType) {
+        formData.append('position_market_type', positionMarketType);
+      }
+      if (positionSelectedRange) {
+        formData.append('position_selected_range', positionSelectedRange);
+      }
+      if (positionPoints) {
+        formData.append('position_points', positionPoints.toString());
+      }
+      
+      // Append image file if present
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+
+      // Submit comment with FormData (handles text + image in single request)
       const response = await fetch('/api/comments/submit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         credentials: 'include',
-        body: JSON.stringify({
-          user_id: user.id,
-          movie_id: movieId,
-          parent_id: replyToId,
-          body: commentBody.trim(),
-          position_market_type: positionMarketType,
-          position_selected_range: positionSelectedRange,
-          position_points: positionPoints
-        }),
+        body: formData, // Don't set Content-Type header - browser will set it with boundary
       });
 
       const result = await response.json();
@@ -269,69 +281,6 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       }
 
       const data = result.data;
-      const commentId = data.id;
-
-      // Step 2: Upload image directly from client if provided (using real comment ID)
-      if (selectedImage) {
-        console.log('Uploading image directly from client:', {
-          file: selectedImage instanceof File,
-          type: selectedImage?.type,
-          fileObject: selectedImage
-        });
-
-        // Get file extension
-        const ext = selectedImage.name.split('.').pop() || 
-                   (selectedImage.type === 'image/jpeg' ? 'jpg' : 
-                    selectedImage.type === 'image/png' ? 'png' : 
-                    selectedImage.type === 'image/webp' ? 'webp' : 'jpg');
-        const storagePath = `${user.id}/${commentId}.${ext}`;
-
-        // Debug logs before upload (as requested)
-        console.log('File check before upload:', {
-          isFile: selectedImage instanceof File,
-          isBlob: selectedImage instanceof Blob,
-          type: selectedImage.type,
-          file: selectedImage
-        });
-        console.log(selectedImage instanceof File, selectedImage?.type, selectedImage);
-
-        // Upload directly using authenticated Supabase client
-        // This uploads a real File/Blob object, NOT JSON
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('comment-images')
-          .upload(storagePath, selectedImage, {
-            contentType: selectedImage.type, // Explicitly set content type to image/*
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Image upload error:', uploadError);
-          alert(`Comment submitted, but image upload failed: ${uploadError.message}`);
-          // Comment is already created, so we continue
-        } else {
-          console.log('Image uploaded successfully:', uploadData);
-          
-          // Step 3: Update comment with image metadata
-          const updateResponse = await fetch('/api/comments/update-image', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              comment_id: commentId,
-              image_path: storagePath,
-              image_mime: selectedImage.type,
-              image_size: selectedImage.size
-            }),
-          });
-
-          if (!updateResponse.ok) {
-            console.error('Failed to update comment with image metadata');
-            // Image is uploaded but metadata update failed - not critical
-          }
-        }
-      }
 
       // Add to pending comments optimistically
       const pendingComment: PendingComment = {
@@ -340,13 +289,16 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         user_id: data.user_id,
         parent_id: data.parent_id,
         body: data.body,
-        approved: false,
+        approved: data.approved || false,
         created_at: data.created_at,
         username: username,
         isPending: true,
         position_market_type: positionMarketType,
         position_selected_range: positionSelectedRange,
-        position_points: positionPoints
+        position_points: positionPoints,
+        image_path: data.image_path || null,
+        image_mime: data.image_mime || null,
+        image_size: data.image_size || null
       };
 
       setPendingComments(prev => [...prev, pendingComment]);
