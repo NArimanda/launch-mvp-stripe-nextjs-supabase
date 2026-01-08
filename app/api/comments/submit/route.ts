@@ -3,6 +3,7 @@ import { supabaseAdmin, supabaseAdminStorage } from '@/utils/supabase-admin';
 import { moderateComment } from '@/utils/moderation/openaiModeration';
 import { generateSignedImageUrl } from '@/utils/supabase/storage';
 import { createCommentWithCooldown } from '@/app/api/comments/actions';
+import sharp from 'sharp';
 
 export async function POST(request: Request) {
   try {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
         );
       }
 
-      // Validate file size (3MB max)
+      // Validate file size (6MB max)
       if (imageFile.size === 0) {
         console.error('[Comment Submit] Image file is empty');
         return NextResponse.json(
@@ -72,13 +73,13 @@ export async function POST(request: Request) {
         );
       }
 
-      if (imageFile.size > 3 * 1024 * 1024) {
+      if (imageFile.size >= 6 * 1024 * 1024) {
         console.error('[Comment Submit] Image file exceeds size limit:', {
           size: imageFile.size,
-          maxSize: 3 * 1024 * 1024
+          maxSize: 6 * 1024 * 1024
         });
         return NextResponse.json(
-          { error: 'Image size must be less than 3MB' },
+          { error: 'Image size must be less than 6MB' },
           { status: 400 }
         );
       }
@@ -92,6 +93,43 @@ export async function POST(request: Request) {
         });
         return NextResponse.json(
           { error: 'Image must be JPEG, PNG, or WebP' },
+          { status: 400 }
+        );
+      }
+
+      // Validate image dimensions (must be less than 4096px in both width and height)
+      try {
+        // Convert File to Buffer for sharp processing
+        const arrayBuffer = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // Get image dimensions using sharp
+        const metadata = await sharp(buffer).metadata();
+        const { width, height } = metadata;
+
+        if (width !== undefined && height !== undefined) {
+          if (width >= 4096 || height >= 4096) {
+            console.error('[Comment Submit] Image dimensions exceed limit:', {
+              width,
+              height,
+              maxDimension: 4096
+            });
+            return NextResponse.json(
+              { error: 'Image dimensions must be less than 4096x4096 pixels' },
+              { status: 400 }
+            );
+          }
+        } else {
+          console.error('[Comment Submit] Could not read image dimensions');
+          return NextResponse.json(
+            { error: 'Unable to read image dimensions. Please ensure the image file is valid.' },
+            { status: 400 }
+          );
+        }
+      } catch (dimensionError) {
+        console.error('[Comment Submit] Error checking image dimensions:', dimensionError);
+        return NextResponse.json(
+          { error: 'Failed to validate image dimensions. Please ensure the image file is valid.' },
           { status: 400 }
         );
       }

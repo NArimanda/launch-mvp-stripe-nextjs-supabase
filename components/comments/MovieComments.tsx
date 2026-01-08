@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useFormState } from 'react-dom';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import MovieCommentsList from './MovieCommentsList';
 import { X, Send, AlertCircle, Image, XCircle } from 'lucide-react';
+import { setUsernameAction } from '@/app/actions/usernameActions';
 
 interface PendingComment {
   id: string;
@@ -33,8 +35,6 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
   const [username, setUsername] = useState<string | null>(null);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [usernameInput, setUsernameInput] = useState('');
-  const [usernameError, setUsernameError] = useState('');
-  const [isSettingUsername, setIsSettingUsername] = useState(false);
   const [commentBody, setCommentBody] = useState('');
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +44,10 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  
+  // Server action state for username form
+  const [usernameFormState, usernameFormAction, isSettingUsername] = useFormState(setUsernameAction, null);
 
   // Get current user session and admin status
   useEffect(() => {
@@ -70,61 +74,31 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
     getSession();
   }, []);
 
-  const validateUsername = (value: string): string => {
-    if (value.length < 3) {
-      return 'Username must be at least 3 characters';
-    }
-    if (value.length > 20) {
-      return 'Username must be at most 20 characters';
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      return 'Username can only contain letters, numbers, and underscores';
-    }
-    return '';
-  };
-
-  const handleSetUsername = async () => {
-    const trimmed = usernameInput.trim();
-    const error = validateUsername(trimmed);
-    
-    if (error) {
-      setUsernameError(error);
-      return;
-    }
-
-    if (!user) return;
-
-    setIsSettingUsername(true);
-    setUsernameError('');
-
-    try {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          username: trimmed,
-          username_set_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        if (updateError.code === '23505' || updateError.message.includes('unique')) {
-          setUsernameError('This username is already taken');
-        } else {
-          setUsernameError(updateError.message || 'Failed to set username');
-        }
-        setIsSettingUsername(false);
-        return;
+  // Handle successful username set
+  useEffect(() => {
+    // When form state is null (success) and not currently submitting, refresh username
+    if (usernameFormState === null && !isSettingUsername) {
+      // Only refresh if we have a user and usernameInput was set (meaning form was submitted)
+      if (user && usernameInput.trim()) {
+        const refreshUsername = async () => {
+          const { data } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', user.id)
+            .single();
+          if (data?.username) {
+            setUsername(data.username);
+            setShowUsernameModal(false);
+            setUsernameInput('');
+            if (formRef.current) {
+              formRef.current.reset();
+            }
+          }
+        };
+        refreshUsername();
       }
-
-      setUsername(trimmed);
-      setShowUsernameModal(false);
-      setUsernameInput('');
-    } catch (err) {
-      setUsernameError(err instanceof Error ? err.message : 'Failed to set username');
-    } finally {
-      setIsSettingUsername(false);
     }
-  };
+  }, [usernameFormState, isSettingUsername, user, usernameInput]);
 
   const handleReply = (commentId: string) => {
     setReplyToId(commentId);
@@ -141,9 +115,9 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       return;
     }
 
-    // Validate file size (3MB max)
-    if (file.size > 3 * 1024 * 1024) {
-      setImageError('Image size must be less than 3MB');
+    // Validate file size (6MB max)
+    if (file.size >= 6 * 1024 * 1024) {
+      setImageError('Image size must be less than 6MB');
       setSelectedImage(null);
       setImagePreview(null);
       return;
@@ -158,14 +132,33 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       return;
     }
 
-    // Clear any previous errors
-    setImageError(null);
-    setSelectedImage(file);
-
-    // Create preview
+    // Validate image dimensions (must be less than 4096px in both width and height)
     const reader = new FileReader();
     reader.onloadend = () => {
-      setImagePreview(reader.result as string);
+      const img = new Image();
+      img.onload = () => {
+        if (img.width >= 4096 || img.height >= 4096) {
+          setImageError('Image dimensions must be less than 4096x4096 pixels');
+          setSelectedImage(null);
+          setImagePreview(null);
+          return;
+        }
+        // Dimensions OK - proceed
+        setImageError(null);
+        setSelectedImage(file);
+        setImagePreview(reader.result as string);
+      };
+      img.onerror = () => {
+        setImageError('Failed to load image. Please ensure the file is a valid image.');
+        setSelectedImage(null);
+        setImagePreview(null);
+      };
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => {
+      setImageError('Failed to read image file');
+      setSelectedImage(null);
+      setImagePreview(null);
     };
     reader.readAsDataURL(file);
   };
@@ -197,8 +190,8 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
           setIsSubmitting(false);
           return;
         }
-        if (selectedImage.size > 3 * 1024 * 1024) {
-          alert('Image size must be less than 3MB');
+        if (selectedImage.size >= 6 * 1024 * 1024) {
+          alert('Image size must be less than 6MB');
           setIsSubmitting(false);
           return;
         }
@@ -362,40 +355,44 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
             <p className="text-slate-600 dark:text-slate-400 mb-4">
               Choose a username to start commenting. This will be displayed with your comments.
             </p>
-            <div className="mb-4">
-              <input
-                type="text"
-                value={usernameInput}
-                onChange={(e) => {
-                  setUsernameInput(e.target.value);
-                  setUsernameError('');
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !isSettingUsername) {
-                    handleSetUsername();
-                  }
-                }}
-                placeholder="username"
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                autoFocus
-              />
-              {usernameError && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {usernameError}
+            <form ref={formRef} action={usernameFormAction} className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  name="username"
+                  value={usernameInput}
+                  onChange={(e) => {
+                    setUsernameInput(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isSettingUsername) {
+                      e.preventDefault();
+                      formRef.current?.requestSubmit();
+                    }
+                  }}
+                  placeholder="username"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  autoFocus
+                  disabled={isSettingUsername}
+                />
+                {usernameFormState && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {usernameFormState}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  3-20 characters, letters, numbers, and underscores only
                 </p>
-              )}
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                3-20 characters, letters, numbers, and underscores only
-              </p>
-            </div>
-            <button
-              onClick={handleSetUsername}
-              disabled={isSettingUsername || !usernameInput.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSettingUsername ? 'Setting...' : 'Set Username'}
-            </button>
+              </div>
+              <button
+                type="submit"
+                disabled={isSettingUsername || !usernameInput.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSettingUsername ? 'Setting...' : 'Set Username'}
+              </button>
+            </form>
           </div>
         </div>
       )}

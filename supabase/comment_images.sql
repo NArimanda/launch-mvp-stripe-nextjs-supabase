@@ -4,10 +4,10 @@ VALUES (
   'comment-images',
   'comment-images',
   false, -- private bucket
-  3145728, -- 3MB limit (3 * 1024 * 1024)
+  6291456, -- 6MB limit (6 * 1024 * 1024)
   ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET file_size_limit = 6291456;
 
 -- Add image columns to movie_comments table
 ALTER TABLE public.movie_comments

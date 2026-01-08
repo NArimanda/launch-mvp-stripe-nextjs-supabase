@@ -29,7 +29,9 @@
     "react-error-boundary": "^5.0.0",
     "react-icons": "^5.4.0",
     "react-intersection-observer": "^9.15.1",
-    "react-scroll": "^1.9.2"
+    "react-scroll": "^1.9.2",
+    "sharp": "^0.33.5",
+    "obscenity": "^0.3.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
