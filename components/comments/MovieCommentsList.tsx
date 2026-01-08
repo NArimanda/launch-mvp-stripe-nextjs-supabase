@@ -7,6 +7,10 @@ import { useRouter } from 'next/navigation';
 import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
 import { approveCommentAction, deleteCommentAction, toggleBanUserAction } from '@/app/api/comments/actions';
 
+const MAX_REPLIES_PER_PARENT = 3;
+const MAX_THREAD_DEPTH = 3;
+const REPLIES_PAGE_SIZE = 3;
+
 interface Comment {
   id: string;
   movie_id: string;
@@ -96,6 +100,8 @@ function CommentCard({
   const [userIsBanned, setUserIsBanned] = useState<boolean | null>(null);
   const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [visibleRepliesCount, setVisibleRepliesCount] = useState<number>(MAX_REPLIES_PER_PARENT);
+  const [expandedDepth, setExpandedDepth] = useState<boolean>(false);
 
   // Fetch ban status and admin status when component mounts (only if admin)
   useEffect(() => {
@@ -306,23 +312,48 @@ function CommentCard({
       
       {/* Render nested replies */}
       {replies.length > 0 && (
-        <div className="mt-2">
-          {replies.map((reply) => {
-            // Type assertion: replies come from buildThreads which adds replies property
-            const replyWithReplies = reply as Comment & { replies: Comment[] };
-            return (
-              <CommentCard
-                key={reply.id}
-                comment={reply}
-                replies={replyWithReplies.replies || []}
-                depth={depth + 1}
-                onReply={onReply}
-                renderQuoteReferences={renderQuoteReferences}
-                isAdmin={isAdmin}
-                onRefresh={onRefresh}
-              />
-            );
-          })}
+        <div className="mt-2 overflow-x-auto">
+          <div className="min-w-[600px]">
+            {/* If at max depth and not expanded, show collapse button */}
+            {depth >= MAX_THREAD_DEPTH && !expandedDepth ? (
+              <button
+                onClick={() => setExpandedDepth(true)}
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline mt-2"
+              >
+                View deeper replies ({replies.length})
+              </button>
+            ) : (
+              <>
+                {/* Render visible replies */}
+                {replies.slice(0, visibleRepliesCount).map((reply) => {
+                  // Type assertion: replies come from buildThreads which adds replies property
+                  const replyWithReplies = reply as Comment & { replies: Comment[] };
+                  return (
+                    <CommentCard
+                      key={reply.id}
+                      comment={reply}
+                      replies={replyWithReplies.replies || []}
+                      depth={depth + 1}
+                      onReply={onReply}
+                      renderQuoteReferences={renderQuoteReferences}
+                      isAdmin={isAdmin}
+                      onRefresh={onRefresh}
+                    />
+                  );
+                })}
+                
+                {/* Show more replies button if more exist */}
+                {replies.length > visibleRepliesCount && (
+                  <button
+                    onClick={() => setVisibleRepliesCount(prev => prev + REPLIES_PAGE_SIZE)}
+                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline mt-2"
+                  >
+                    Show more replies ({replies.length - visibleRepliesCount} more)
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
