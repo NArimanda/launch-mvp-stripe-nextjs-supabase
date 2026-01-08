@@ -1,9 +1,8 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, supabaseAdminStorage } from '@/utils/supabase-admin';
 import { moderateComment } from '@/utils/moderation/openaiModeration';
 import { generateSignedImageUrl } from '@/utils/supabase/storage';
+import { createCommentWithCooldown } from '@/app/api/comments/actions';
 
 export async function POST(request: Request) {
   try {
@@ -38,29 +37,8 @@ export async function POST(request: Request) {
     
     const imageFile = imageFileRaw instanceof File ? imageFileRaw : null;
 
-    // Validate user_id is provided
-    if (!user_id) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Verify user exists using service role client
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .eq('id', user_id)
-      .single();
-
-    if (userError || !userData) {
-      return NextResponse.json(
-        { error: 'Invalid user' },
-        { status: 401 }
-      );
-    }
-
-    if (!movie_id || !commentBody || !commentBody.trim()) {
+    // Validate required fields including user_id
+    if (!user_id || !movie_id || !commentBody || !commentBody.trim()) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -123,37 +101,63 @@ export async function POST(request: Request) {
       console.log('[Comment Submit] No image file provided');
     }
 
-    // Step 1: Insert comment first (without image fields initially)
-    const { data, error } = await supabaseAdmin
-      .from('movie_comments')
-      .insert({
-        user_id: user_id,
-        movie_id: movie_id,
-        parent_id: parent_id || null,
-        body: commentBody.trim(),
-        approved: false, // Comments start as unapproved
-        position_market_type: position_market_type || null,
-        position_selected_range: position_selected_range || null,
-        position_points: position_points ? parseInt(position_points, 10) : null
-      })
-      .select()
-      .single();
+    // Step 1: Insert comment using server action (enforces 1-minute cooldown)
+    const result = await createCommentWithCooldown(
+      user_id,
+      movie_id,
+      commentBody.trim(),
+      parent_id || null,
+      position_market_type || null,
+      position_selected_range || null,
+      position_points ? parseInt(position_points, 10) : null
+    );
 
-    if (error) {
-      console.error('Comment submit - Insert error:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
+    if ('error' in result) {
+      console.error('Comment submit - Server action error:', result.error);
+      
+      // Check for cooldown error
+      if (result.error.includes('Please wait')) {
+        return NextResponse.json(
+          { error: result.error },
+          { status: 429 }
+        );
+      }
+      
+      
       return NextResponse.json(
-        { error: error.message || 'Failed to submit comment', details: error.details },
+        { error: result.error },
         { status: 500 }
       );
     }
 
-    const commentData = data;
-    const commentId = commentData.id;
+    const commentId = result.commentId;
+
+    // Fetch the inserted comment data for later use
+    const { data: fetchedCommentData, error: fetchError } = await supabaseAdmin
+      .from('movie_comments')
+      .select('*')
+      .eq('id', commentId)
+      .single();
+
+    let commentData: any;
+    if (fetchError || !fetchedCommentData) {
+      console.error('Comment submit - Error fetching inserted comment:', {
+        commentId,
+        error: fetchError?.message
+      });
+      // Create minimal commentData object as fallback
+      commentData = {
+        id: commentId,
+        movie_id: movie_id,
+        user_id: user_id,
+        parent_id: parent_id || null,
+        body: commentBody.trim(),
+        approved: false,
+        created_at: new Date().toISOString()
+      };
+    } else {
+      commentData = fetchedCommentData;
+    }
     const textPreview = commentBody.trim().length > 100 
       ? commentBody.trim().substring(0, 100) + '...' 
       : commentBody.trim();
@@ -467,17 +471,17 @@ export async function POST(request: Request) {
 
     // Step 4: Re-fetch the complete comment record to ensure we return all latest data
     console.log('[Comment Submit] Re-fetching complete comment record...', { commentId });
-    const { data: finalCommentData, error: fetchError } = await supabaseAdmin
+    const { data: finalCommentData, error: finalFetchError } = await supabaseAdmin
       .from('movie_comments')
       .select('*')
       .eq('id', commentId)
       .single();
 
-    if (fetchError) {
+    if (finalFetchError) {
       console.error('[Comment Submit] Error fetching final comment data:', {
         commentId,
-        error: fetchError.message,
-        errorCode: fetchError.code,
+        error: finalFetchError.message,
+        errorCode: finalFetchError.code,
         action: 'returning initial comment data'
       });
       // Fall back to returning the initial commentData if fetch fails

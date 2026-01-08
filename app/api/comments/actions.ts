@@ -164,3 +164,71 @@ export async function toggleBanUserAction(userId: string): Promise<{ error?: str
   return {};
 }
 
+export async function createCommentWithCooldown(
+  user_id: string,
+  movie_id: string,
+  body: string,
+  parent_id: string | null = null,
+  position_market_type: string | null = null,
+  position_selected_range: string | null = null,
+  position_points: number | null = null
+): Promise<{ success: true; commentId: string } | { error: string }> {
+  // Use admin client since RLS is disabled - no cookie/auth needed
+  // No auth check needed - route handler already verified authentication
+
+  // Check cooldown: get the most recent comment time for this user
+  const { data: lastComment, error: cooldownError } = await supabaseAdmin
+    .from('movie_comments')
+    .select('created_at')
+    .eq('user_id', user_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (cooldownError) {
+    console.error('Error checking comment cooldown:', cooldownError);
+    return { error: 'Failed to check comment cooldown' };
+  }
+
+  // If user has a previous comment, check if cooldown period has passed
+  if (lastComment?.created_at) {
+    const lastCommentTime = new Date(lastComment.created_at);
+    const now = new Date();
+    const timeSinceLastComment = now.getTime() - lastCommentTime.getTime();
+    const cooldownMs = 60 * 1000; // 60 seconds in milliseconds
+
+    if (timeSinceLastComment < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastComment) / 1000);
+      return { error: `Please wait ${remainingSeconds} seconds before commenting again` };
+    }
+  }
+
+  // Insert the comment
+  const { data: insertedComment, error: insertError } = await supabaseAdmin
+    .from('movie_comments')
+    .insert({
+      user_id: user_id,
+      movie_id,
+      parent_id,
+      body: body.trim(),
+      approved: false, // Comments start as unapproved
+      position_market_type,
+      position_selected_range,
+      position_points,
+      image_path: null // Will be updated after image upload if present
+    })
+    .select('id')
+    .single();
+
+  if (insertError) {
+    console.error('Error inserting comment:', insertError);
+    return { error: insertError.message || 'Failed to submit comment' };
+  }
+
+  if (!insertedComment?.id) {
+    return { error: 'Failed to create comment: no ID returned' };
+  }
+
+  return { success: true, commentId: insertedComment.id };
+}
+
