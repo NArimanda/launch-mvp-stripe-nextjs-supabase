@@ -173,8 +173,23 @@ export async function createCommentWithCooldown(
   position_selected_range: string | null = null,
   position_points: number | null = null
 ): Promise<{ success: true; commentId: string } | { error: string }> {
-  // Use admin client since RLS is disabled - no cookie/auth needed
-  // No auth check needed - route handler already verified authentication
+  // Defense-in-depth: Verify authentication even though route handler checks it
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    return { error: 'Not authenticated' };
+  }
+  
+  // CRITICAL: Verify that the user_id parameter matches the authenticated user
+  // This prevents user_id spoofing if this function is ever called from another location
+  if (user.id !== user_id) {
+    console.error('createCommentWithCooldown: User ID mismatch', {
+      authenticatedUserId: user.id,
+      providedUserId: user_id
+    });
+    return { error: 'User ID mismatch' };
+  }
 
   // Check cooldown: get the most recent comment time for this user
   const { data: lastComment, error: cooldownError } = await supabaseAdmin
