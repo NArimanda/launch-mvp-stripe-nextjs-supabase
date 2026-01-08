@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { placeBetAction } from "@/app/actions/betActions";
 
 export async function POST(request: Request) {
   const supabase = createRouteHandlerClient({ cookies });
@@ -130,29 +131,33 @@ export async function POST(request: Request) {
       : 1; // Fallback for backward compatibility (conservative default)
     const potential_payout = Math.round(points * multiplier);
 
-    // Start a transaction: deduct points and insert bet
-    const { error: transactionError } = await supabase.rpc('place_bet_transaction', {
-      p_user_id: user.id,
-      p_market_id: market_id,
-      p_selected_range: selected_range,
-      p_points: points,
-      p_potential_payout: potential_payout,
-      p_price_multiplier: price_multiplier,
-      p_bin_id: bin_id // Pass the calculated bin_id
-    });
+    // Call Server Action to place bet (includes cooldown check, wallet deduction, and bet insertion)
+    const result = await placeBetAction(
+      market_id,
+      selected_range,
+      points,
+      potential_payout,
+      price_multiplier,
+      bin_id
+    );
 
-    if (transactionError) {
-      console.error("Transaction error:", transactionError);
-      console.error("Transaction error details:", {
-        message: transactionError.message,
-        details: transactionError.details,
-        hint: transactionError.hint,
-        code: transactionError.code
-      });
+    if ('error' in result) {
+      // Handle cooldown error with friendly message
+      if (result.error.includes('Please wait') && result.error.includes('before placing another bet')) {
+        return NextResponse.json({ 
+          error: "Bet cooldown",
+          details: result.error
+        }, { status: 400 });
+      }
+      
+      // Handle other errors
+      const statusCode = result.error === 'Not authenticated' ? 401 :
+                        result.error === 'Insufficient points' || result.error === 'Wallet not found' ? 400 : 500;
+      
       return NextResponse.json({ 
         error: "Failed to place bet",
-        details: transactionError.message
-      }, { status: 500 });
+        details: result.error
+      }, { status: statusCode });
     }
 
     return NextResponse.json({ 
