@@ -3,10 +3,25 @@ import { supabaseAdmin, supabaseAdminStorage } from '@/utils/supabase-admin';
 import { moderateComment } from '@/utils/moderation/openaiModeration';
 import { generateSignedImageUrl } from '@/utils/supabase/storage';
 import { createCommentWithCooldown } from '@/app/api/comments/actions';
+import { createServerSupabase } from '@/utils/supabase/server';
 import sharp from 'sharp';
 
 export async function POST(request: Request) {
   try {
+    // Authenticate user first - CRITICAL for security
+    const supabase = await createServerSupabase();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+    
+    // Use authenticated user's ID - do NOT trust client-provided user_id
+    const user_id = user.id;
+    
     // Parse FormData
     console.log('[Comment Submit] Received FormData request');
     const formData = await request.formData();
@@ -18,8 +33,7 @@ export async function POST(request: Request) {
     }
     console.log('[Comment Submit] FormData keys:', formDataKeys);
     
-    // Extract text fields
-    const user_id = formData.get('user_id') as string;
+    // Extract text fields (user_id is no longer from FormData)
     const movie_id = formData.get('movie_id') as string;
     const parent_id = formData.get('parent_id') as string | null;
     const commentBody = formData.get('body') as string;
@@ -38,8 +52,8 @@ export async function POST(request: Request) {
     
     const imageFile = imageFileRaw instanceof File ? imageFileRaw : null;
 
-    // Validate required fields including user_id
-    if (!user_id || !movie_id || !commentBody || !commentBody.trim()) {
+    // Validate required fields (user_id is now from authentication, not FormData)
+    if (!movie_id || !commentBody || !commentBody.trim()) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -316,7 +330,6 @@ export async function POST(request: Request) {
             storagePath,
             error: uploadError.message,
             errorName: uploadError.name,
-            errorStatus: uploadError.statusCode,
             fullError: JSON.stringify(uploadError, Object.getOwnPropertyNames(uploadError))
           });
           

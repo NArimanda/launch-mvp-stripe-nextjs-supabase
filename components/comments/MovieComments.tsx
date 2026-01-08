@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useFormState } from 'react-dom';
+import { useEffect, useState, useRef, useActionState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import MovieCommentsList from './MovieCommentsList';
@@ -47,7 +46,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
   const formRef = useRef<HTMLFormElement>(null);
   
   // Server action state for username form
-  const [usernameFormState, usernameFormAction, isSettingUsername] = useFormState(setUsernameAction, null);
+  const [usernameFormState, usernameFormAction, isSettingUsername] = useActionState(setUsernameAction, null);
 
   // Get current user session and admin status
   useEffect(() => {
@@ -235,8 +234,8 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       }
 
       // Create FormData with all fields
+      // Note: user_id is no longer sent - server authenticates and uses authenticated user's ID
       const formData = new FormData();
-      formData.append('user_id', user.id);
       formData.append('movie_id', movieId);
       if (replyToId) {
         formData.append('parent_id', replyToId);
