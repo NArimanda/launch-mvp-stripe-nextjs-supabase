@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
 import { approveCommentAction, deleteCommentAction, toggleBanUserAction } from '@/app/api/comments/actions';
 import ExpandableCommentImage from './ExpandableCommentImage';
@@ -204,13 +205,26 @@ function CommentCard({
       }`}>
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className={`font-semibold ${
-              userIsAdmin 
-                ? 'text-green-700 dark:text-green-400' 
-                : 'text-slate-900 dark:text-white'
-            }`}>
-              {comment.username || 'Anonymous'}
-            </span>
+            {comment.username ? (
+              <Link 
+                href={`/${comment.username}/dashboard`}
+                className={`font-semibold hover:underline ${
+                  userIsAdmin 
+                    ? 'text-green-700 dark:text-green-400' 
+                    : 'text-slate-900 dark:text-white'
+                }`}
+              >
+                {comment.username}
+              </Link>
+            ) : (
+              <span className={`font-semibold ${
+                userIsAdmin 
+                  ? 'text-green-700 dark:text-green-400' 
+                  : 'text-slate-900 dark:text-white'
+              }`}>
+                Anonymous
+              </span>
+            )}
             {currentUserId && comment.user_id === currentUserId && (
               <span className="text-xs text-red-600 dark:text-red-400 font-medium">
                 (you)

@@ -3,6 +3,7 @@
 import { useFormStatus, useFormState } from 'react-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { approveComment, deleteComment, toggleBanUser } from './actions';
 import { supabase } from '@/utils/supabase';
 import ExpandableCommentImage from '@/components/comments/ExpandableCommentImage';
@@ -267,13 +268,22 @@ export default function CommentRowClient({
                 )}
               </span>
               <span className="text-sm text-slate-500 dark:text-slate-400">•</span>
-              <span className={`text-sm ${
-                userIsAdmin 
-                  ? 'text-green-700 dark:text-green-400 font-semibold' 
-                  : 'text-slate-500 dark:text-slate-400'
-              }`}>
-                {comment.username || 'Anonymous'}
-              </span>
+              {comment.username ? (
+                <Link 
+                  href={`/${comment.username}/dashboard`}
+                  className={`text-sm hover:underline ${
+                    userIsAdmin 
+                      ? 'text-green-700 dark:text-green-400 font-semibold' 
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {comment.username}
+                </Link>
+              ) : (
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  Anonymous
+                </span>
+              )}
               {currentUserId && comment.user_id === currentUserId && (
                 <span className="text-xs text-red-600 dark:text-red-400 font-medium">
                   (you)
