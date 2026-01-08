@@ -172,7 +172,34 @@ export default function CommentRowClient({
 }: CommentRowClientProps) {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [userIsAdmin, setUserIsAdmin] = useState<boolean | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const isBanned = comment.user_is_banned ?? false;
+
+  // Fetch admin status for comment author and current user ID
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      // Get current user ID
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        setCurrentUserId(authUser.id);
+      }
+
+      // Get admin status for comment author
+      if (comment.user_id) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_admin')
+          .eq('id', comment.user_id)
+          .single();
+        
+        if (!error && data) {
+          setUserIsAdmin(data.is_admin ?? false);
+        }
+      }
+    };
+    fetchUserInfo();
+  }, [comment.user_id]);
 
   // Show toast and auto-hide after 3 seconds
   useEffect(() => {
@@ -240,9 +267,18 @@ export default function CommentRowClient({
                 )}
               </span>
               <span className="text-sm text-slate-500 dark:text-slate-400">•</span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">
+              <span className={`text-sm ${
+                userIsAdmin 
+                  ? 'text-green-700 dark:text-green-400 font-semibold' 
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}>
                 {comment.username || 'Anonymous'}
               </span>
+              {currentUserId && comment.user_id === currentUserId && (
+                <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  (you)
+                </span>
+              )}
               {isBanned && (
                 <>
                   <span className="text-xs font-semibold px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">

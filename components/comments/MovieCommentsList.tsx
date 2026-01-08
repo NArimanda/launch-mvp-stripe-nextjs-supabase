@@ -87,7 +87,8 @@ function CommentCard({
   onReply,
   renderQuoteReferences,
   isAdmin = false,
-  onRefresh
+  onRefresh,
+  currentUserId
 }: { 
   comment: Comment; 
   replies: Comment[]; 
@@ -96,6 +97,7 @@ function CommentCard({
   renderQuoteReferences?: (text: string) => React.ReactNode;
   isAdmin?: boolean;
   onRefresh?: () => void;
+  currentUserId?: string | null;
 }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [userIsBanned, setUserIsBanned] = useState<boolean | null>(null);
@@ -104,9 +106,10 @@ function CommentCard({
   const [visibleRepliesCount, setVisibleRepliesCount] = useState<number>(MAX_REPLIES_PER_PARENT);
   const [expandedDepth, setExpandedDepth] = useState<boolean>(false);
 
-  // Fetch ban status and admin status when component mounts (only if admin)
+  // Fetch ban status and admin status when component mounts
+  // Always fetch admin status (for green username), but only fetch ban status if admin viewer
   useEffect(() => {
-    if (isAdmin && comment.user_id) {
+    if (comment.user_id) {
       const fetchUserStatus = async () => {
         const { data, error } = await supabase
           .from('users')
@@ -115,8 +118,12 @@ function CommentCard({
           .single();
         
         if (!error && data) {
-          setUserIsBanned(data.is_banned ?? false);
+          // Always set admin status (for green username styling)
           setUserIsAdmin(data.is_admin ?? false);
+          // Only set ban status if viewer is admin (for admin actions)
+          if (isAdmin) {
+            setUserIsBanned(data.is_banned ?? false);
+          }
         }
       };
       fetchUserStatus();
@@ -197,9 +204,18 @@ function CommentCard({
       }`}>
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-900 dark:text-white">
+            <span className={`font-semibold ${
+              userIsAdmin 
+                ? 'text-green-700 dark:text-green-400' 
+                : 'text-slate-900 dark:text-white'
+            }`}>
               {comment.username || 'Anonymous'}
             </span>
+            {currentUserId && comment.user_id === currentUserId && (
+              <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                (you)
+              </span>
+            )}
             {isAdmin && userIsBanned && (
               <span className="text-xs font-semibold px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
                 BANNED
@@ -329,6 +345,7 @@ function CommentCard({
                       renderQuoteReferences={renderQuoteReferences}
                       isAdmin={isAdmin}
                       onRefresh={onRefresh}
+                      currentUserId={currentUserId}
                     />
                   );
                 })}
@@ -650,6 +667,7 @@ export default function MovieCommentsList({
                 renderQuoteReferences={renderQuoteReferences}
                 isAdmin={isAdmin}
                 onRefresh={handleRefresh}
+                currentUserId={currentUserId}
               />
             ))}
           </div>
