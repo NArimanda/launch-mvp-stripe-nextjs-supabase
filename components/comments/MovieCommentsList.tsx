@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
 import { approveCommentAction, deleteCommentAction, toggleBanUserAction } from '@/app/api/comments/actions';
+import ExpandableCommentImage from './ExpandableCommentImage';
 
 const MAX_REPLIES_PER_PARENT = 3;
 const MAX_THREAD_DEPTH = 3;
@@ -221,17 +222,7 @@ function CommentCard({
         
         {/* Comment Image */}
         {imageUrl && (
-          <div className="mb-3">
-            <img
-              src={imageUrl}
-              alt="Comment attachment"
-              className="max-w-full max-h-96 rounded-lg border border-slate-300 dark:border-slate-600 object-contain"
-              onError={() => {
-                // Hide image on error
-                setImageUrl(null);
-              }}
-            />
-          </div>
+          <ExpandableCommentImage src={imageUrl} alt="Comment attachment" />
         )}
         
         {/* Position Snapshot Display */}

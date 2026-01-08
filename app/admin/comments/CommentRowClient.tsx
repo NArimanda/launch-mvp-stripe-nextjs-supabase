@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { approveComment, deleteComment, toggleBanUser } from './actions';
 import { supabase } from '@/utils/supabase';
+import ExpandableCommentImage from '@/components/comments/ExpandableCommentImage';
 
 interface Comment {
   id: string;
@@ -310,15 +311,7 @@ export default function CommentRowClient({
         {/* Comment Image */}
         {imageUrl && (
           <div className="mt-3 border-t border-slate-200 dark:border-slate-700 pt-3">
-            <img
-              src={imageUrl}
-              alt="Comment attachment"
-              className="max-w-full max-h-96 rounded-lg border border-slate-300 dark:border-slate-600 object-contain"
-              onError={() => {
-                // Hide image on error
-                setImageUrl(null);
-              }}
-            />
+            <ExpandableCommentImage src={imageUrl} alt="Comment attachment" />
           </div>
         )}
       </div>
