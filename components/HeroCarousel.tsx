@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 import { HERO_ITEMS, HeroItem } from "../data/HeroArticles";
 
 const AUTOPLAY_MS = 5000;
 
 export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[] }) {
+  const { user, supabase } = useAuth();
   const [i, setI] = useState(0);
+  const [netBalance, setNetBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const go = useCallback((next: number) => {
@@ -45,6 +49,81 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
     // Handle article click if needed
   }, []);
 
+  // Calculate net balance (wallet balance + locked bet points)
+  useEffect(() => {
+    let cancelled = false;
+    
+    async function calculateNetBalance() {
+      if (!user?.id) {
+        setNetBalance(null);
+        setIsLoadingBalance(false);
+        return;
+      }
+
+      try {
+        setIsLoadingBalance(true);
+        
+        // Fetch wallet balance
+        const { data: wallet, error: walletError } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (walletError && walletError.code !== 'PGRST116') {
+          console.error('Error fetching wallet:', walletError);
+          if (!cancelled) {
+            setNetBalance(null);
+            setIsLoadingBalance(false);
+          }
+          return;
+        }
+
+        const balance = wallet?.balance ?? 0;
+
+        // Fetch locked bets (bets with outcome NULL or 'pending' in markets with status 'open' or 'locked')
+        const { data: lockedRows, error: lockedErr } = await supabase
+          .from('bets')
+          .select('points, markets!inner(status)')
+          .eq('user_id', user.id)
+          .in('markets.status', ['open', 'locked'])
+          .or('outcome.is.null,outcome.eq.pending');
+
+        if (lockedErr) {
+          console.error('Error fetching locked bets:', lockedErr);
+          if (!cancelled) {
+            setNetBalance(null);
+            setIsLoadingBalance(false);
+          }
+          return;
+        }
+
+        // Sum locked points
+        const lockedPoints = (lockedRows ?? []).reduce((sum, r) => sum + Number(r.points || 0), 0);
+
+        // Calculate net balance
+        const calculatedNetBalance = Number(balance) + lockedPoints;
+
+        if (!cancelled) {
+          setNetBalance(calculatedNetBalance);
+          setIsLoadingBalance(false);
+        }
+      } catch (error) {
+        console.error('Error calculating net balance:', error);
+        if (!cancelled) {
+          setNetBalance(null);
+          setIsLoadingBalance(false);
+        }
+      }
+    }
+
+    calculateNetBalance();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, supabase]);
+
   if (!items.length) {
     return (
       <div className="relative h-[38vh] sm:h-[52vh] rounded-2xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
@@ -55,6 +134,15 @@ export default function HeroCarousel({ items = HERO_ITEMS }: { items?: HeroItem[
 
   return (
     <section aria-label="Featured articles" className="relative w-full overflow-hidden">
+      {/* Restore Balance Button - Only show when net balance < 500 */}
+      {user && !isLoadingBalance && netBalance !== null && netBalance < 500 && (
+        <Link
+          href="/dashboard"
+          className="absolute top-4 right-4 z-30 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-lg"
+        >
+          restore balance to 500
+        </Link>
+      )}
       <div className="relative h-[38vh] sm:h-[52vh] rounded-2xl">
         {items.map((item, idx) => (
           <Link
