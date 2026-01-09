@@ -246,7 +246,10 @@ function CommentCard({
           </div>
         </div>
         
-        <div className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap">
+        <div 
+          lang="en"
+          className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] [hyphens:auto]"
+        >
           {renderQuoteReferences ? renderQuoteReferences(comment.body) : comment.body}
         </div>
         

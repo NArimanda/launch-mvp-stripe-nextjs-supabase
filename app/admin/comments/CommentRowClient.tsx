@@ -350,7 +350,10 @@ export default function CommentRowClient({
             />
           </div>
         </div>
-        <div className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap border-t border-slate-200 dark:border-slate-700 pt-2 mt-2">
+        <div 
+          lang="en"
+          className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] [hyphens:auto] border-t border-slate-200 dark:border-slate-700 pt-2 mt-2"
+        >
           {comment.body}
         </div>
         

@@ -319,12 +319,22 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
     return parts.map((part, index) => {
       if (part.match(/^>>[a-f0-9-]+$/i)) {
         return (
-          <span key={index} className="text-slate-500 dark:text-slate-400 italic font-mono text-sm">
+          <span 
+            key={index} 
+            className="text-slate-500 dark:text-slate-400 italic font-mono text-sm break-words [overflow-wrap:anywhere] [word-break:break-word]"
+          >
             {part}
           </span>
         );
       }
-      return <span key={index}>{part}</span>;
+      return (
+        <span 
+          key={index}
+          className="break-words [overflow-wrap:anywhere] [word-break:break-word]"
+        >
+          {part}
+        </span>
+      );
     });
   };
 
@@ -436,8 +446,22 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
               onChange={(e) => setCommentBody(e.target.value)}
               placeholder={replyToId ? "Write your reply..." : "Write a comment..."}
               rows={4}
+              maxLength={2000}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
+            
+            {/* Character counter */}
+            <div className="mt-1 text-right">
+              <span className={`text-xs ${
+                commentBody.length >= 2000
+                  ? 'text-red-600 dark:text-red-400'
+                  : commentBody.length > 1800 
+                  ? 'text-orange-600 dark:text-orange-400' 
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}>
+                {commentBody.length} / 2000
+              </span>
+            </div>
             
             {/* Image Upload Section */}
             <div className="mt-3">
@@ -494,7 +518,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
               </p>
               <button
                 onClick={handleSubmitComment}
-                disabled={isSubmitting || !commentBody.trim()}
+                disabled={isSubmitting || !commentBody.trim() || commentBody.length > 2000}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="h-4 w-4" />
