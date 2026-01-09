@@ -36,6 +36,29 @@ export default async function Home() {
     .order("release_date", { ascending: false })
     .limit(10);
 
+  // Recent Archive: movies where the month timeframe market has ended
+  const now = new Date().toISOString();
+  const { data: recentArchiveMarkets } = await supabase
+    .from("markets")
+    .select(`
+      end_time,
+      movies!inner(id, slug, title, image_url, release_date)
+    `)
+    .eq("timeframe", "month")
+    .eq("type", "worldwide")
+    .lt("end_time", now)
+    .order("end_time", { ascending: false })
+    .limit(10);
+
+  // Extract unique movies from the results
+  // Handle both potential response structures: { movies: {...} } or { movies: {...} } (nested)
+  const archiveMovies = recentArchiveMarkets
+    ?.map((m: { movies: { id: string; slug: string; title: string; image_url: string | null; release_date: string | null } }) => m.movies)
+    .filter((movie) => movie !== null && movie !== undefined)
+    .filter((movie, index, self) => 
+      index === self.findIndex((m) => m.id === movie.id)
+    ) || [];
+
   return (
     <main className="px-4 py-6 max-w-7xl mx-auto">
       {/* Hero Section with Leaderboard */}
@@ -52,6 +75,7 @@ export default async function Home() {
       {!!(trending && trending.length) && <MovieRow title="Trending Now" movies={trending} />}
       <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
       {!!(inTheaters && inTheaters.length) && <MovieRow title="In Theaters" movies={inTheaters} />}
+      {!!(archiveMovies && archiveMovies.length) && <MovieRow title="Recent Archive" movies={archiveMovies} />}
     </main>
   );
 }
