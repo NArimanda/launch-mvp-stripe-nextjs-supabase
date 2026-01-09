@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useActionState } from 'react';
 import { motion } from 'framer-motion';
+import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { 
   Wallet,
   Activity,
   History
 } from 'lucide-react';
 import Image from 'next/image';
+import { restoreBalance } from '@/app/actions/walletActions';
 
 interface UserBet {
   id: string;
@@ -39,6 +42,56 @@ interface UserDashboardContentProps {
   balance?: number | null;
   isOwnDashboard?: boolean;
   loading?: boolean;
+}
+
+function RestoreBalanceSubmitButton() {
+  const { pending } = useFormStatus();
+  
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+    >
+      {pending ? 'Restoring...' : 'restore balance - 500'}
+    </button>
+  );
+}
+
+function RestoreBalanceForm() {
+  const router = useRouter();
+  const [state, formAction] = useActionState(restoreBalance, null);
+  const prevStateRef = useRef<string | null>(null);
+  const submittedRef = useRef(false);
+  
+  // Handle state changes and refresh on success
+  useEffect(() => {
+    // Only process if state has changed from previous
+    if (prevStateRef.current !== state) {
+      prevStateRef.current = state;
+      
+      // If state is null (success) and we've submitted, refresh
+      if (state === null && submittedRef.current) {
+        router.refresh();
+        submittedRef.current = false; // Reset for next submission
+      }
+    }
+  }, [state, router]);
+  
+  const handleSubmit = () => {
+    submittedRef.current = true;
+  };
+  
+  return (
+    <form action={formAction} onSubmit={handleSubmit}>
+      {state && state !== null && (
+        <div className="mb-2 text-sm text-red-600 dark:text-red-400">
+          {state}
+        </div>
+      )}
+      <RestoreBalanceSubmitButton />
+    </form>
+  );
 }
 
 export default function UserDashboardContent({
@@ -82,20 +135,26 @@ export default function UserDashboardContent({
               className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                    <Wallet className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Available Points</p>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {loading ? (
-                        <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-24 rounded"></div>
-                      ) : (
-                        formatCurrency(balance || 0)
-                      )}
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                      <Wallet className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Available Points</p>
+                      <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                        {loading ? (
+                          <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-24 rounded"></div>
+                        ) : (
+                          formatCurrency(balance || 0)
+                        )}
+                      </div>
                     </div>
                   </div>
+                  {/* Restore Balance Button - Only show when eligible */}
+                  {balance !== null && balance < 250 && (
+                    <RestoreBalanceForm />
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-slate-600 dark:text-slate-400">Total Value</p>
