@@ -6,10 +6,10 @@ export async function GET() {
   const supabase = createRouteHandlerClient({ cookies });
 
   try {
-    // Fetch top 5 players by wallet balance
+    // Fetch top 5 players by wallet balance with username from users table
     const { data: walletsData, error: walletsError } = await supabase
       .from('wallets')
-      .select('user_id, balance, email')
+      .select('user_id, balance, users(username)')
       .order('balance', { ascending: false })
       .limit(5);
 
@@ -22,9 +22,10 @@ export async function GET() {
       return NextResponse.json({ players: [] });
     }
 
-    // Transform the data to include rank and email
+    // Transform the data to include rank and username
     const leaderboardData = walletsData.map((wallet, index) => ({
-      email: wallet.email || `Player ${index + 1}`,
+      user_id: wallet.user_id,
+      username: wallet.users?.username || 'username not found',
       balance: wallet.balance || 0,
       rank: index + 1
     }));

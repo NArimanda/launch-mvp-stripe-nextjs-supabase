@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Trophy, Medal, Award } from 'lucide-react';
 
 interface LeaderboardPlayer {
-  email: string;
+  user_id: string;
+  username: string;
   balance: number;
   rank: number;
 }
@@ -99,7 +100,7 @@ export default function Leaderboard() {
         <div className="space-y-3">
           {players.map((player) => (
             <div
-              key={player.email}
+              key={player.user_id}
               className={`flex items-center justify-between p-3 rounded-lg border transition-all hover:shadow-md ${
                 getRankColor(player.rank)
               }`}
@@ -112,7 +113,7 @@ export default function Leaderboard() {
                   <p className={`font-medium truncate ${
                     player.rank <= 3 ? 'text-white' : 'text-slate-900 dark:text-white'
                   }`}>
-                    {player.email}
+                    {player.username}
                   </p>
                 </div>
               </div>
