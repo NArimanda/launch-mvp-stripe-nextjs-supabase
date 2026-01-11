@@ -12,7 +12,7 @@ export default function MovieRow({ title, movies = [] as Movie[] }: { title: str
   if (!movies.length) return null;
   return (
     <section className="mt-8">
-      <h2 className="mb-3 text-lg font-semibold">{title}</h2>
+      <h2 className="mb-4 text-2xl font-bold">{title}</h2>
       <div className="flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">
         {movies.map((m) => (
           <MovieCard

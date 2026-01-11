@@ -1,7 +1,6 @@
-import HeroCarousel from "@/components/HeroCarousel"; // your existing hero
 import MovieRow from "@/components/MovieRow";
 import SearchBar from "@/components/SearchBar";
-import Leaderboard from "@/components/Leaderboard";
+import InstructionsSection from "@/components/InstructionsSection";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function Home() {
@@ -12,14 +11,6 @@ export default async function Home() {
     .from("movies")
     .select("id,slug,title,image_url,release_date")
     .gte("release_date", today)
-    .order("release_date", { ascending: true })
-    .limit(10);
-
-  // Optional: if you add a boolean column `is_trending` in movies
-  const { data: trending } = await supabase
-    .from("movies")
-    .select("id,slug,title,image_url,release_date")
-    .eq("is_trending", true)       // remove if you don't have this column
     .order("release_date", { ascending: true })
     .limit(10);
 
@@ -59,38 +50,19 @@ export default async function Home() {
       index === self.findIndex((m) => m.id === movie.id)
     ) || [];
 
-  // Fetch hero articles from database
-  const { data: heroArticlesData } = await supabase
-    .from('hero_articles')
-    .select('id, title, image_path, href, kicker')
-    .order('display_order', { ascending: true });
-
-  // Transform database articles to HeroItem format
-  const heroItems = heroArticlesData?.map((article) => ({
-    id: article.id,
-    title: article.title,
-    imageUrl: article.image_path
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hero-images/${article.image_path}`
-      : '',
-    href: article.href,
-    kicker: article.kicker || undefined,
-  })) || [];
-
   return (
     <main className="px-4 py-6 max-w-7xl mx-auto">
-      {/* Hero Section with Leaderboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <HeroCarousel items={heroItems} />
-        <Leaderboard />
-      </div>
-
-      <div className="mt-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Upcoming & Trending</h1>
+      {/* Releasing Soon - First row */}
+      <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
+      
+      {/* Instructions Section with Leaderboard */}
+      <InstructionsSection />
+      
+      {/* In Theaters and Recent Archive Section */}
+      <div className="mt-8 flex items-center justify-end mb-4">
         <SearchBar />
       </div>
-
-      {!!(trending && trending.length) && <MovieRow title="Trending Now" movies={trending} />}
-      <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
+      
       {!!(inTheaters && inTheaters.length) && <MovieRow title="In Theaters" movies={inTheaters} />}
       {!!(archiveMovies && archiveMovies.length) && <MovieRow title="Recent Archive" movies={archiveMovies} />}
     </main>

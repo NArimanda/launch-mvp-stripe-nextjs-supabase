@@ -16,6 +16,8 @@ export default function TopBar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
+  const [netBalance, setNetBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
   // State for tracking logout process
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -51,6 +53,81 @@ export default function TopBar() {
     };
 
     checkAdmin();
+  }, [user?.id]);
+
+  // Calculate net balance (wallet balance + locked bet points)
+  useEffect(() => {
+    let cancelled = false;
+    
+    async function calculateNetBalance() {
+      if (!user?.id) {
+        setNetBalance(null);
+        setIsLoadingBalance(false);
+        return;
+      }
+
+      try {
+        setIsLoadingBalance(true);
+        
+        // Fetch wallet balance
+        const { data: wallet, error: walletError } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (walletError && walletError.code !== 'PGRST116') {
+          console.error('Error fetching wallet:', walletError);
+          if (!cancelled) {
+            setNetBalance(null);
+            setIsLoadingBalance(false);
+          }
+          return;
+        }
+
+        const balance = wallet?.balance ?? 0;
+
+        // Fetch locked bets (bets with outcome NULL or 'pending' in markets with status 'open' or 'locked')
+        const { data: lockedRows, error: lockedErr } = await supabase
+          .from('bets')
+          .select('points, markets!inner(status)')
+          .eq('user_id', user.id)
+          .in('markets.status', ['open', 'locked'])
+          .or('outcome.is.null,outcome.eq.pending');
+
+        if (lockedErr) {
+          console.error('Error fetching locked bets:', lockedErr);
+          if (!cancelled) {
+            setNetBalance(null);
+            setIsLoadingBalance(false);
+          }
+          return;
+        }
+
+        // Sum locked points
+        const lockedPoints = (lockedRows ?? []).reduce((sum, r) => sum + Number(r.points || 0), 0);
+
+        // Calculate net balance
+        const calculatedNetBalance = Number(balance) + lockedPoints;
+
+        if (!cancelled) {
+          setNetBalance(calculatedNetBalance);
+          setIsLoadingBalance(false);
+        }
+      } catch (error) {
+        console.error('Error calculating net balance:', error);
+        if (!cancelled) {
+          setNetBalance(null);
+          setIsLoadingBalance(false);
+        }
+      }
+    }
+
+    calculateNetBalance();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   // Handle click outside dropdown to close it
@@ -109,6 +186,14 @@ export default function TopBar() {
                     className="hidden sm:block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
                   >
                     Manage Hero
+                  </Link>
+                )}
+                {user && !isLoadingBalance && netBalance !== null && netBalance < 500 && (
+                  <Link
+                    href="/dashboard"
+                    className="hidden sm:block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
+                  >
+                    restore balance to 500
                   </Link>
                 )}
                 {pathname !== '/dashboard' && (
