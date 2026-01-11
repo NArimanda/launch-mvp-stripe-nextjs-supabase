@@ -58,7 +58,7 @@ export default function MarketContent({ marketId, bins, stats, type, timeframe, 
         </h2>
         
         <div className="relative">
-          <BetForm marketId={marketId} bins={bins} type={type} timeframe={timeframe} />
+          <BetForm marketId={marketId} bins={bins} type={type} timeframe={timeframe} marketStatus={marketStatus} />
           
           {/* Blurred overlay for closed markets */}
           {isMarketClosed && (

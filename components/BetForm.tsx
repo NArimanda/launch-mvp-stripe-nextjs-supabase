@@ -18,9 +18,13 @@ interface BetFormProps {
   bins: Bin[];
   type: string;
   timeframe: string;
+  marketStatus?: string;
 }
 
-export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
+export default function BetForm({ marketId, bins, timeframe, marketStatus }: BetFormProps) {
+  const isMarketClosed = marketStatus === 'closed';
+  const isMarketResolved = marketStatus === 'resolved';
+  const isMarketDisabled = isMarketClosed || isMarketResolved;
   const { user, session } = useAuth();
   
   // Map timeframe to MarketType
@@ -140,6 +144,13 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
     setError(null);
     setOk(null);
 
+    if (isMarketDisabled) {
+      setError(isMarketClosed 
+        ? "This market is closed and no longer accepting bets." 
+        : "This market has been resolved and no longer accepting bets.");
+      return;
+    }
+
     if (!user) {
       setError("Please sign in to place a bet");
       return;
@@ -256,11 +267,30 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
         User object: {user ? 'Present' : 'Missing'}
       </div>
 
+      {/* Market status message when disabled */}
+      {isMarketDisabled && (
+        <div className={`mb-4 p-3 rounded-lg border ${
+          isMarketClosed 
+            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200'
+            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+        }`}>
+          <div className="font-medium mb-1">
+            {isMarketClosed ? '🔒 Market Closed' : '🏁 Market Resolved'}
+          </div>
+          <div className="text-sm">
+            {isMarketClosed 
+              ? 'This market is closed and no longer accepting bets.'
+              : 'This market has been resolved and no longer accepting bets.'}
+          </div>
+        </div>
+      )}
+
       <div className="mb-4">
         <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">Select a range:</div>
         <RangeSlider 
           edges={binEdges}
           availableRanges={availableRanges}
+          disabled={isMarketDisabled}
           onRangeChange={(lowerIndex, upperIndex) => {
             const lowerDollars = binEdges[lowerIndex];
             // Check if upperIndex is at the last position and if the last bucket is open-ended
@@ -303,7 +333,10 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
           step={1}
           value={points}
           onChange={(e) => setPoints(parseInt(e.target.value || "0", 10))}
-          className="w-28 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm"
+          disabled={isMarketDisabled || submitting}
+          className={`w-28 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm ${
+            isMarketDisabled ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         />
       </div>
 
@@ -341,8 +374,8 @@ export default function BetForm({ marketId, bins, timeframe }: BetFormProps) {
       <button
         type="button"
         onClick={submit}
-        disabled={submitting}
-        className="px-5 py-2 rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
+        disabled={isMarketDisabled || submitting || !selectedRange}
+        className="px-5 py-2 rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Placing…" : "Submit Bet"}
       </button>
@@ -356,21 +389,23 @@ interface RangeSliderProps {
   onRangeChange: (lowerIndex: number, upperIndex: number) => void;
   formatValue: (value: number) => string;
   dollarsToMillions: (dollars: number) => number;
+  disabled?: boolean;
 }
 
-function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dollarsToMillions }: RangeSliderProps) {
+function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dollarsToMillions, disabled = false }: RangeSliderProps) {
   const [lowerIndex, setLowerIndex] = React.useState(0);
   const [upperIndex, setUpperIndex] = React.useState(edges.length - 1);
   const [isDragging, setIsDragging] = React.useState<"lower" | "upper" | null>(null);
   const sliderRef = React.useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (thumb: "lower" | "upper") => (e: React.MouseEvent) => {
+    if (disabled) return;
     e.preventDefault();
     setIsDragging(thumb);
   };
 
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isDragging || !sliderRef.current) return;
+    if (disabled || !isDragging || !sliderRef.current) return;
 
     const rect = sliderRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -386,7 +421,7 @@ function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dolla
       setUpperIndex(newUpperIndex);
       onRangeChange(lowerIndex, newUpperIndex);
     }
-  }, [isDragging, edges.length, lowerIndex, upperIndex, onRangeChange]);
+  }, [disabled, isDragging, edges.length, lowerIndex, upperIndex, onRangeChange]);
 
   const handleMouseUp = React.useCallback(() => {
     setIsDragging(null);
@@ -417,11 +452,13 @@ function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dolla
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* Track */}
       <div 
         ref={sliderRef}
-        className="h-2 bg-slate-200 dark:bg-slate-600 rounded-full relative cursor-pointer"
+        className={`h-2 bg-slate-200 dark:bg-slate-600 rounded-full relative ${
+          disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+        }`}
       >
         {/* Selected range */}
         <div 
@@ -434,14 +471,18 @@ function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dolla
         
         {/* Lower thumb */}
         <div
-          className="absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer transform -translate-y-1/2 -translate-x-1/2 hover:scale-110 transition-transform z-10"
+          className={`absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
+          }`}
           style={{ left: `${lowerPercentage}%` }}
           onMouseDown={handleMouseDown("lower")}
         />
         
         {/* Upper thumb */}
         <div
-          className="absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer transform -translate-y-1/2 -translate-x-1/2 hover:scale-110 transition-transform z-10"
+          className={`absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
+          }`}
           style={{ left: `${upperPercentage}%` }}
           onMouseDown={handleMouseDown("upper")}
         />
