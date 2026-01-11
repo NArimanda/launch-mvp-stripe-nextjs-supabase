@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import BalanceTracker from '@/contexts/BalanceTracker';
+import { supabase } from '@/utils/supabase';
 
 // TopBar component handles user profile display and navigation
 export default function TopBar() {
@@ -13,9 +14,44 @@ export default function TopBar() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
 
   // State for tracking logout process
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Check admin status
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user?.id) {
+        setIsAdmin(false);
+        setIsLoadingAdmin(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data?.is_admin === true);
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+        setIsAdmin(false);
+      } finally {
+        setIsLoadingAdmin(false);
+      }
+    };
+
+    checkAdmin();
+  }, [user?.id]);
 
   // Handle click outside dropdown to close it
   useEffect(() => {
@@ -66,15 +102,24 @@ export default function TopBar() {
           ) : (
             // Show profile for authenticated users
             <>
-
-              {pathname !== '/dashboard' && (
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="hidden sm:block px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
-                >
-                  Dashboard
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {!isLoadingAdmin && isAdmin && pathname !== '/admin/hero' && (
+                  <Link
+                    href="/admin/hero"
+                    className="hidden sm:block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
+                  >
+                    Manage Hero
+                  </Link>
+                )}
+                {pathname !== '/dashboard' && (
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="hidden sm:block px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
+                  >
+                    Dashboard
+                  </button>
+                )}
+              </div>
               
               <div className="relative" ref={dropdownRef}>
                 <button

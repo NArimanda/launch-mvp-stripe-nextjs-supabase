@@ -59,11 +59,28 @@ export default async function Home() {
       index === self.findIndex((m) => m.id === movie.id)
     ) || [];
 
+  // Fetch hero articles from database
+  const { data: heroArticlesData } = await supabase
+    .from('hero_articles')
+    .select('id, title, image_path, href, kicker')
+    .order('display_order', { ascending: true });
+
+  // Transform database articles to HeroItem format
+  const heroItems = heroArticlesData?.map((article) => ({
+    id: article.id,
+    title: article.title,
+    imageUrl: article.image_path
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/hero-images/${article.image_path}`
+      : '',
+    href: article.href,
+    kicker: article.kicker || undefined,
+  })) || [];
+
   return (
     <main className="px-4 py-6 max-w-7xl mx-auto">
       {/* Hero Section with Leaderboard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <HeroCarousel />
+        <HeroCarousel items={heroItems} />
         <Leaderboard />
       </div>
 
