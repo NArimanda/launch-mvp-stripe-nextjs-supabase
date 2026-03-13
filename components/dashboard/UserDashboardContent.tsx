@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { restoreBalance } from '@/app/actions/walletActions';
+import html2canvas from 'html2canvas';
 
 interface UserBet {
   id: string;
@@ -98,6 +99,133 @@ function RestoreBalanceForm() {
   );
 }
 
+interface StatsCardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  username: string;
+  availablePoints: number;
+  totalValue: number;
+  predictionAccuracy?: number | null;
+  totalPredictions: number;
+  pendingPredictions: number;
+}
+
+function StatsCardModal({
+  isOpen,
+  onClose,
+  username,
+  availablePoints,
+  totalValue,
+  predictionAccuracy,
+  totalPredictions,
+  pendingPredictions
+}: StatsCardModalProps) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const accuracyPercent = predictionAccuracy != null ? (predictionAccuracy * 100).toFixed(1) : '--';
+
+  if (!isOpen) return null;
+
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#020617', // dark navy background for contrast
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'stats-card.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+    } catch (err) {
+      console.error('Failed to generate stats card image:', err);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-slate-900 text-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-300">
+            Stats Card Preview
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white text-sm px-2 py-1 rounded-md hover:bg-slate-800"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="px-4 py-4 space-y-4">
+          <div
+            ref={cardRef}
+            className="bg-slate-950 rounded-lg px-6 py-5 shadow-inner border border-slate-800"
+          >
+            <h4 className="text-base font-semibold mb-4 tracking-wide text-slate-100">
+              Box Office Bandits – Stats
+            </h4>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Username</span>
+                <span className="font-medium text-slate-100">{username}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Available Points</span>
+                <span className="font-medium text-slate-100">
+                  {availablePoints.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Total Value</span>
+                <span className="font-medium text-emerald-300">
+                  ${totalValue.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Prediction Accuracy</span>
+                <span className="font-medium text-slate-100">
+                  {accuracyPercent}
+                  {accuracyPercent !== '--' ? '%' : ''}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Total Predictions</span>
+                <span className="font-medium text-slate-100">
+                  {totalPredictions.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Pending Predictions</span>
+                <span className="font-medium text-slate-100">
+                  {pendingPredictions.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-colors"
+            >
+              Download PNG
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UserDashboardContent({
   username,
   pendingBets,
@@ -111,6 +239,7 @@ export default function UserDashboardContent({
   predictionAccuracy
 }: UserDashboardContentProps) {
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
   const totalValue = (balance ?? 0) + pendingBets.reduce((sum, b) => sum + b.points, 0);
   const accuracyPercent = predictionAccuracy != null ? (predictionAccuracy * 100).toFixed(1) : null;
@@ -136,9 +265,20 @@ export default function UserDashboardContent({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Portfolio Balance Section - show for own and other user dashboards */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-            Portfolio Balance
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+              Portfolio Balance
+            </h2>
+            {isOwnDashboard && (
+              <button
+                type="button"
+                onClick={() => setIsStatsModalOpen(true)}
+                className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                View Stats Card
+              </button>
+            )}
+          </div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -486,6 +626,20 @@ export default function UserDashboardContent({
           </div>
         )}
       </div>
+
+      {/* Stats Card Modal - own dashboard only */}
+      {isOwnDashboard && (
+        <StatsCardModal
+          isOpen={isStatsModalOpen}
+          onClose={() => setIsStatsModalOpen(false)}
+          username={username}
+          availablePoints={balance || 0}
+          totalValue={totalValue}
+          predictionAccuracy={predictionAccuracy}
+          totalPredictions={totalPredictions}
+          pendingPredictions={pendingPredictions}
+        />
+      )}
     </div>
   );
 }
