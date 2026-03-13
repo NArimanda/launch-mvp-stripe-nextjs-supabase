@@ -214,7 +214,7 @@ export default function TopBar() {
                   <div className="w-8 h-8 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary dark:text-primary-light">
                     {user.email?.[0].toUpperCase()}
                   </div>
-                  <BalanceTracker />
+                  <BalanceTracker value={netBalance} loading={isLoadingBalance} />
                 </button>
                 
                 {isDropdownOpen && (

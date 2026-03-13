@@ -104,6 +104,8 @@ export default function UserDashboardContent({
 }: UserDashboardContentProps) {
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
 
+  const totalValue = (balance ?? 0) + pendingBets.reduce((sum, b) => sum + b.points, 0);
+
   const formatCurrency = (points: number) => {
     return points.toLocaleString();
   };
@@ -162,7 +164,7 @@ export default function UserDashboardContent({
                     {loading ? (
                       <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-6 w-16 rounded"></div>
                     ) : (
-                      `$${(balance || 0).toFixed(2)}`
+                      `$${totalValue.toFixed(2)}`
                     )}
                   </div>
                 </div>
