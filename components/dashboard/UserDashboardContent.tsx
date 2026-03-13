@@ -226,6 +226,147 @@ function StatsCardModal({
   );
 }
 
+interface BetCardModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  bet: UserBet;
+  isHistory: boolean;
+}
+
+function BetCardModal({
+  isOpen,
+  onClose,
+  bet,
+  isHistory,
+}: BetCardModalProps) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#020617',
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'bet-card.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+    } catch (err) {
+      console.error('Failed to generate bet card image:', err);
+    }
+  };
+
+  const formattedPlacedAt = bet.placed_at
+    ? new Date(bet.placed_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'N/A';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-slate-900 text-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-300">
+            {isHistory ? 'Bet Card – Settled' : 'Bet Card – Pending'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white text-sm px-2 py-1 rounded-md hover:bg-slate-800"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="px-4 py-4 space-y-4">
+          <div
+            ref={cardRef}
+            className="bg-slate-950 rounded-lg px-6 py-5 shadow-inner border border-slate-800"
+          >
+            <h4 className="text-base font-semibold mb-4 tracking-wide text-slate-100">
+              Box Office Bandits – Bet
+            </h4>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Movie Title</span>
+                <span className="font-medium text-slate-100">{bet.movie.slug}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Release Date</span>
+                <span className="font-medium text-slate-100">{bet.movie.release_date}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Market Type</span>
+                <span className="font-medium text-slate-100">{bet.market.type}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Timeframe</span>
+                <span className="font-medium text-slate-100">{bet.market.timeframe}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Selected Range</span>
+                <span className="font-medium text-slate-100">{bet.selected_range}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Points Wagered</span>
+                <span className="font-medium text-slate-100">
+                  {bet.points.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Potential Payout</span>
+                <span className="font-medium text-emerald-300">
+                  {bet.potential_payout.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Bet Status</span>
+                <span className="font-medium text-slate-100">{bet.status}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Outcome</span>
+                <span className="font-medium text-slate-100">
+                  {bet.outcome || 'Pending'}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-400">Placed At</span>
+                <span className="font-medium text-slate-100">
+                  {formattedPlacedAt}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-colors"
+            >
+              Download PNG
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UserDashboardContent({
   username,
   pendingBets,
@@ -240,6 +381,7 @@ export default function UserDashboardContent({
 }: UserDashboardContentProps) {
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [activeBetModal, setActiveBetModal] = useState<{ bet: UserBet; isHistory: boolean } | null>(null);
 
   const totalValue = (balance ?? 0) + pendingBets.reduce((sum, b) => sum + b.points, 0);
   const accuracyPercent = predictionAccuracy != null ? (predictionAccuracy * 100).toFixed(1) : null;
@@ -482,6 +624,15 @@ export default function UserDashboardContent({
                         </div>
                       </div>
                     </div>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setActiveBetModal({ bet, isHistory: false })}
+                        className="inline-flex text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        View Bet Card
+                      </button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -619,6 +770,15 @@ export default function UserDashboardContent({
                         </div>
                       </div>
                     </div>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setActiveBetModal({ bet, isHistory: true })}
+                        className="inline-flex text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        View Bet Card
+                      </button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -638,6 +798,16 @@ export default function UserDashboardContent({
           predictionAccuracy={predictionAccuracy}
           totalPredictions={totalPredictions}
           pendingPredictions={pendingPredictions}
+        />
+      )}
+
+      {/* Bet Card Modal for individual bets */}
+      {activeBetModal && (
+        <BetCardModal
+          isOpen={true}
+          onClose={() => setActiveBetModal(null)}
+          bet={activeBetModal.bet}
+          isHistory={activeBetModal.isHistory}
         />
       )}
     </div>
