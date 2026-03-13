@@ -55,7 +55,7 @@ export default async function Home() {
       {/* Releasing Soon - First row */}
       <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
       
-      {/* Instructions Section with Leaderboard */}
+      {/* Instructions Section */}
       <InstructionsSection />
       
       {/* In Theaters and Recent Archive Section */}
