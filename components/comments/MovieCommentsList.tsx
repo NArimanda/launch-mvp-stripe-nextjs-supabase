@@ -22,6 +22,7 @@ interface Comment {
   approved: boolean;
   created_at: string;
   username?: string;
+  author_total_value?: number | null;
   isPending?: boolean;
   position_market_type?: string | null;
   position_selected_range?: string | null;
@@ -206,16 +207,23 @@ function CommentCard({
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {comment.username ? (
-              <Link 
-                href={`/${comment.username}/dashboard`}
-                className={`font-semibold hover:underline ${
-                  userIsAdmin 
-                    ? 'text-green-700 dark:text-green-400' 
-                    : 'text-slate-900 dark:text-white'
-                }`}
-              >
-                {comment.username}
-              </Link>
+              <>
+                <Link 
+                  href={`/${comment.username}/dashboard`}
+                  className={`font-semibold hover:underline ${
+                    userIsAdmin 
+                      ? 'text-green-700 dark:text-green-400' 
+                      : 'text-slate-900 dark:text-white'
+                  }`}
+                >
+                  {comment.username}
+                </Link>
+                {comment.author_total_value != null && comment.author_total_value !== undefined && (
+                  <span className="text-slate-500 dark:text-slate-400 ml-0.5">
+                    [{comment.author_total_value.toLocaleString()}]
+                  </span>
+                )}
+              </>
             ) : (
               <span className={`font-semibold ${
                 userIsAdmin 

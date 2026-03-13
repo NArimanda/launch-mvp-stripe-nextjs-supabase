@@ -42,6 +42,10 @@ interface UserDashboardContentProps {
   balance?: number | null;
   isOwnDashboard?: boolean;
   loading?: boolean;
+  totalPredictions: number;
+  pendingPredictions: number;
+  settledPredictions: number;
+  predictionAccuracy?: number | null;
 }
 
 function RestoreBalanceSubmitButton() {
@@ -100,11 +104,16 @@ export default function UserDashboardContent({
   historyBets,
   balance,
   isOwnDashboard = false,
-  loading = false
+  loading = false,
+  totalPredictions,
+  pendingPredictions,
+  settledPredictions,
+  predictionAccuracy
 }: UserDashboardContentProps) {
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
 
   const totalValue = (balance ?? 0) + pendingBets.reduce((sum, b) => sum + b.points, 0);
+  const accuracyPercent = predictionAccuracy != null ? (predictionAccuracy * 100).toFixed(1) : null;
 
   const formatCurrency = (points: number) => {
     return points.toLocaleString();
@@ -125,40 +134,40 @@ export default function UserDashboardContent({
 
       {/* Portfolio Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Portfolio Balance Section - Only show for own dashboard */}
-        {isOwnDashboard && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
-              Portfolio Balance
-            </h2>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                      <Wallet className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Available Points</p>
-                      <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                        {loading ? (
-                          <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-24 rounded"></div>
-                        ) : (
-                          formatCurrency(balance || 0)
-                        )}
-                      </div>
+        {/* Portfolio Balance Section - show for own and other user dashboards */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            Portfolio Balance
+          </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                    <Wallet className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Available Points</p>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {loading ? (
+                        <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-24 rounded"></div>
+                      ) : (
+                        formatCurrency(balance || 0)
+                      )}
                     </div>
                   </div>
-                  {/* Restore Balance Button - Only show when eligible */}
-                  {balance !== null && balance < 250 && (
-                    <RestoreBalanceForm />
-                  )}
                 </div>
-                <div className="text-right">
+                {/* Restore Balance Button - only on own dashboard when eligible */}
+                {isOwnDashboard && balance !== null && balance < 250 && (
+                  <RestoreBalanceForm />
+                )}
+              </div>
+              <div className="text-right space-y-1">
+                <div>
                   <p className="text-sm text-slate-600 dark:text-slate-400">Total Value</p>
                   <div className="text-lg font-semibold text-green-600 dark:text-green-400">
                     {loading ? (
@@ -168,10 +177,22 @@ export default function UserDashboardContent({
                     )}
                   </div>
                 </div>
+                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                  <div>
+                    Prediction Accuracy:{' '}
+                    {accuracyPercent != null ? `${accuracyPercent}%` : '--'}
+                  </div>
+                  <div>
+                    Total Predictions: {totalPredictions}
+                  </div>
+                  <div>
+                    Pending Predictions: {pendingPredictions}
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          </div>
-        )}
+            </div>
+          </motion.div>
+        </div>
 
         {/* Tabs */}
         <div className="mb-6">
@@ -305,6 +326,18 @@ export default function UserDashboardContent({
                           <div>
                             <p className="text-sm text-slate-600 dark:text-slate-400">Outcome</p>
                             <p className="font-medium text-slate-900 dark:text-white">{bet.outcome || 'Pending'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">Placed At</p>
+                            <p className="font-medium text-slate-900 dark:text-white">
+                              {bet.placed_at ? new Date(bet.placed_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'N/A'}
+                            </p>
                           </div>
                         </div>
                       </div>

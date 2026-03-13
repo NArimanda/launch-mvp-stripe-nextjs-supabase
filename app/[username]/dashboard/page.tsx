@@ -143,20 +143,28 @@ export default async function UserDashboardPage({ params }: UserDashboardPagePro
     bet.outcome !== null && bet.outcome !== 'pending'
   );
 
+  // Aggregate prediction statistics
+  const totalPredictions = transformedBets.length;
+  const pendingPredictions = pendingBets.length;
+  const settledBets = historyBets;
+  const settledPredictions = settledBets.length;
+  const wonCount = settledBets.filter(bet => bet.outcome === 'won').length;
+  const predictionAccuracy = settledPredictions > 0
+    ? wonCount / settledPredictions
+    : null;
+
   // Check if this is the viewer's own dashboard
   const isOwnDashboard = authUser?.id === targetUser.id;
 
-  // Fetch balance only if it's own dashboard
+  // Fetch balance for the profile owner (target user) so it shows for both own and other dashboards
   let balance: number | null = null;
-  if (isOwnDashboard && authUser) {
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', authUser.id)
-      .single();
-    
-    balance = walletData?.balance || 0;
-  }
+  const { data: walletData } = await supabase
+    .from('wallets')
+    .select('balance')
+    .eq('user_id', targetUser.id)
+    .maybeSingle();
+
+  balance = walletData?.balance ?? 0;
 
   return (
     <UserDashboardContent
@@ -165,6 +173,10 @@ export default async function UserDashboardPage({ params }: UserDashboardPagePro
       historyBets={historyBets}
       balance={balance}
       isOwnDashboard={isOwnDashboard}
+      totalPredictions={totalPredictions}
+      pendingPredictions={pendingPredictions}
+      settledPredictions={settledPredictions}
+      predictionAccuracy={predictionAccuracy}
       loading={false}
     />
   );

@@ -10,6 +10,7 @@ interface Comment {
   approved: boolean;
   created_at: string;
   username?: string | null;
+  author_total_value?: number | null;
   position_market_type?: string | null;
   position_selected_range?: string | null;
   position_points?: number | null;
@@ -391,8 +392,48 @@ export async function GET(request: NextRequest) {
       transformedComments.push(...transformedReplies);
     }
 
+    // Compute author total value (wallet + locked bet points) for each comment author
+    const authorIds = [...new Set(transformedComments.map((c: any) => c.user_id).filter(Boolean))];
+    const authorTotalValueMap = new Map<string, number>();
+
+    if (authorIds.length > 0) {
+      const { data: walletsData } = await supabase
+        .from('wallets')
+        .select('user_id, balance')
+        .in('user_id', authorIds);
+
+      const walletMap = new Map<string, number>();
+      (walletsData ?? []).forEach((w: { user_id: string; balance: number | null }) => {
+        walletMap.set(w.user_id, w.balance ?? 0);
+      });
+
+      const { data: lockedBetsData } = await supabase
+        .from('bets')
+        .select('user_id, points, markets!inner(status)')
+        .in('user_id', authorIds)
+        .in('markets.status', ['open', 'locked'])
+        .or('outcome.is.null,outcome.eq.pending');
+
+      const lockedByUser = new Map<string, number>();
+      (lockedBetsData ?? []).forEach((b: { user_id: string; points: number | null }) => {
+        const prev = lockedByUser.get(b.user_id) ?? 0;
+        lockedByUser.set(b.user_id, prev + Number(b.points ?? 0));
+      });
+
+      authorIds.forEach((uid) => {
+        const balance = walletMap.get(uid) ?? 0;
+        const locked = lockedByUser.get(uid) ?? 0;
+        authorTotalValueMap.set(uid, balance + locked);
+      });
+    }
+
+    const commentsWithTotalValue: Comment[] = transformedComments.map((c: any) => ({
+      ...c,
+      author_total_value: c.user_id ? (authorTotalValueMap.get(c.user_id) ?? null) : null,
+    }));
+
     return NextResponse.json({
-      comments: transformedComments,
+      comments: commentsWithTotalValue,
       nextCursor,
     });
   } catch (err) {

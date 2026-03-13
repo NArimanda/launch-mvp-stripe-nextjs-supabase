@@ -180,14 +180,6 @@ export default function TopBar() {
             // Show profile for authenticated users
             <>
               <div className="flex items-center gap-2">
-                {!isLoadingAdmin && isAdmin && pathname !== '/admin/hero' && (
-                  <Link
-                    href="/admin/hero"
-                    className="hidden sm:block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
-                  >
-                    Manage Hero
-                  </Link>
-                )}
                 {user && !isLoadingBalance && netBalance !== null && netBalance < 500 && (
                   <Link
                     href="/dashboard"
