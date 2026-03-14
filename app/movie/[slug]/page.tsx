@@ -50,38 +50,37 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
   ];
 
   return (
-    <div className="px-4 py-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-cinema-page px-4 py-6 max-w-5xl mx-auto">
       <div className="flex gap-6">
-        <div className="relative w-40 sm:w-56 aspect-[2/3] rounded-lg overflow-hidden bg-slate-100">
+        <div className="relative w-40 sm:w-56 aspect-[2/3] rounded-lg overflow-hidden bg-cinema-page border border-cinema-border">
           <Image src={movie.image_url || "/posters/placeholder.jpg"} alt={movie.title} fill className="object-cover" />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold">{movie.title}</h1>
+          <h1 className="text-2xl font-semibold text-cinema-text">{movie.title}</h1>
           {movie.release_date && (
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-cinema-textMuted mt-1">
               Releases {(() => {
-                // Fix timezone issue: parse as local date instead of UTC
                 const [year, month, day] = movie.release_date.split('-').map(Number);
-                const date = new Date(year, month - 1, day); // month is 0-indexed
+                const date = new Date(year, month - 1, day);
                 return new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric" }).format(date);
               })()}
             </p>
           )}
-          {movie.description && <p className="mt-3 text-slate-700 dark:text-slate-300">{movie.description}</p>}
+          {movie.description && <p className="mt-3 text-cinema-textMuted">{movie.description}</p>}
         </div>
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold mb-4">Markets</h2>
+        <h2 className="text-lg font-semibold text-cinema-text mb-4">Markets</h2>
         
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Worldwide</h3>
+          <h3 className="text-xl font-semibold mb-4 text-cinema-text">Worldwide</h3>
           <div className="flex flex-col gap-3">
             {marketButtons.map((button) => (
               <Link
                 key={`worldwide-${button.title}`}
                 href={`/movie/${movie.slug}/worldwide/${button.timeframe}`}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-md hover:shadow-lg"
+                className="bg-primary hover:bg-primary-dark text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-cinema-card hover:shadow-cinema-card-hover"
               >
                 {button.title}
               </Link>

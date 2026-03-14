@@ -158,9 +158,9 @@ export default function TopBar() {
   };
 
   return (
-    <div className="w-full bg-surface-light dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
+    <div className="w-full bg-cinema-card border-b border-cinema-border">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-3">
-        <Link href="/" className="text-md sm:text-lg font-medium text-text dark:text-text-dark flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link href="/" className="text-md sm:text-lg font-medium text-cinema-text flex items-center gap-2 hover:opacity-80 transition-opacity">
           <span className="text-2xl">🎬</span>
           <span className="font-sans">NextTemp</span>
         </Link>
@@ -168,7 +168,6 @@ export default function TopBar() {
         <div className="flex items-center gap-4">
           {!user ? (
             <>
-              {/* Show login button for unauthenticated users */}
               <Link
                 href="/login"
                 className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-subtle hover:shadow-hover"
@@ -177,7 +176,6 @@ export default function TopBar() {
               </Link>
             </>
           ) : (
-            // Show profile for authenticated users
             <>
               <div className="flex items-center gap-2">
                 {user && !isLoadingBalance && netBalance !== null && netBalance < 500 && (
@@ -201,19 +199,19 @@ export default function TopBar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 hover:bg-neutral-darker/10 dark:hover:bg-neutral-darker/50 px-3 py-2 rounded-full transition-colors"
+                  className="flex items-center gap-2 hover:bg-cinema-cardHighlight px-3 py-2 rounded-full transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center text-primary dark:text-primary-light">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary">
                     {user.email?.[0].toUpperCase()}
                   </div>
                   <BalanceTracker value={netBalance} loading={isLoadingBalance} />
                 </button>
                 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-surface-light dark:bg-surface-dark rounded-lg shadow-hover py-1 z-[60] border border-gray-200 dark:border-gray-700">
+                  <div className="absolute right-0 mt-2 w-48 bg-cinema-card rounded-lg shadow-cinema-card py-1 z-[60] border border-cinema-border">
                     <Link
                       href="/profile"
-                      className="block px-4 py-2 text-sm text-text dark:text-text-dark hover:bg-neutral dark:hover:bg-neutral-dark"
+                      className="block px-4 py-2 text-sm text-cinema-text hover:bg-cinema-cardHighlight"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsDropdownOpen(false);
@@ -225,7 +223,7 @@ export default function TopBar() {
                     <button
                       onClick={handleLogout}
                       disabled={isLoggingOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-danger hover:bg-neutral dark:hover:bg-neutral-dark disabled:opacity-50"
+                      className="block w-full text-left px-4 py-2 text-sm text-danger hover:bg-cinema-cardHighlight disabled:opacity-50"
                     >
                       {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
                     </button>

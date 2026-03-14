@@ -51,7 +51,7 @@ export default async function Home() {
     ) || [];
 
   return (
-    <main className="px-4 py-6 max-w-7xl mx-auto">
+    <main className="min-h-screen bg-cinema-page px-4 py-6 max-w-7xl mx-auto">
       {/* Instructions Section */}
       <InstructionsSection />
 

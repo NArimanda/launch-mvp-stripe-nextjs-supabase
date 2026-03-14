@@ -32,15 +32,15 @@ export default function SearchBar() {
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search movies…"
-        className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 outline-none focus:ring-2 focus:ring-primary"
+        className="w-full rounded-lg border border-cinema-border bg-cinema-card text-cinema-text placeholder-cinema-textMuted px-3 py-2 outline-none focus:ring-2 focus:ring-cinema-accent"
       />
       {open && results.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-md max-h-80 overflow-auto">
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-cinema-border bg-cinema-card shadow-cinema-card max-h-80 overflow-auto">
           {results.map((r) => (
             <Link
               key={r.id}
               href={`/movie/${r.slug}`}
-              className="block px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700"
+              className="block px-3 py-2 text-cinema-text hover:bg-cinema-cardHighlight"
             >
               {r.title}
             </Link>

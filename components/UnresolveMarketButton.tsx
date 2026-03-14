@@ -107,19 +107,19 @@ export default function UnresolveMarketButton({ marketId, marketStatus }: Unreso
 
       {/* Confirmation Dialog */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-cinema-card border border-cinema-border rounded-lg p-6 max-w-md mx-4 shadow-cinema-card">
+            <h3 className="text-lg font-semibold text-cinema-text mb-2">
               Confirm Unresolve Market
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+            <p className="text-sm text-cinema-textMuted mb-4">
               This will undo all settlements and wallet credits for this market. Continue?
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={isLoading}
-                className="px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded disabled:opacity-50"
+                className="px-4 py-2 text-sm text-cinema-text hover:bg-cinema-cardHighlight rounded disabled:opacity-50"
               >
                 Cancel
               </button>

@@ -321,7 +321,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         return (
           <span 
             key={index} 
-            className="text-slate-500 dark:text-slate-400 italic font-mono text-sm break-words [overflow-wrap:anywhere] [word-break:break-word]"
+            className="text-cinema-textMuted italic font-mono text-sm break-words [overflow-wrap:anywhere] [word-break:break-word]"
           >
             {part}
           </span>
@@ -343,25 +343,24 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
     <div className="mt-8">
       {/* Username Onboarding Modal */}
       {showUsernameModal && user && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-neutral-dark rounded-lg p-6 max-w-md w-full shadow-xl">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-cinema-card border border-cinema-border rounded-lg p-6 max-w-md w-full shadow-cinema-card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-cinema-text">
                 Set Your Username
               </h2>
               <button
                 onClick={() => {
-                  // Don't allow closing if username is required
                   if (!username) return;
                   setShowUsernameModal(false);
                 }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-cinema-textMuted hover:text-cinema-text"
                 disabled={!username}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="text-slate-600 dark:text-slate-400 mb-4">
+            <p className="text-cinema-textMuted mb-4">
               Choose a username to start commenting. This will be displayed with your comments.
             </p>
             <form ref={formRef} action={usernameFormAction} className="space-y-4">
@@ -380,24 +379,24 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
                     }
                   }}
                   placeholder="username"
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-cinema-border rounded-lg bg-cinema-cardHighlight text-cinema-text placeholder-cinema-textMuted focus:outline-none focus:ring-2 focus:ring-cinema-accent"
                   autoFocus
                   disabled={isSettingUsername}
                 />
                 {usernameFormState && (
-                  <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
                     <AlertCircle className="h-4 w-4" />
                     {usernameFormState}
                   </p>
                 )}
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-xs text-cinema-textMuted">
                   3-20 characters, letters, numbers, and underscores only
                 </p>
               </div>
               <button
                 type="submit"
                 disabled={isSettingUsername || !usernameInput.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSettingUsername ? 'Setting...' : 'Set Username'}
               </button>
@@ -409,11 +408,11 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
       {/* Comment Composer */}
       <div id="comment-composer" className="mb-6">
         {!user ? (
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <p className="text-slate-600 dark:text-slate-400 text-center">
+          <div className="bg-cinema-card rounded-lg p-4 border border-cinema-border">
+            <p className="text-cinema-textMuted text-center">
               <button
                 onClick={() => router.push('/login')}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                className="text-cinema-accent hover:text-cinema-accentWarm underline"
               >
                 Sign in
               </button>
@@ -421,21 +420,21 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
             </p>
           </div>
         ) : !username ? (
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-            <p className="text-slate-600 dark:text-slate-400 text-center">
+          <div className="bg-cinema-card rounded-lg p-4 border border-cinema-border">
+            <p className="text-cinema-textMuted text-center">
               Please set your username to comment
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-neutral-dark rounded-lg p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="bg-cinema-card rounded-lg p-4 shadow-cinema-card border border-cinema-border">
             {replyToId && (
-              <div className="mb-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded p-2">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="mb-3 flex items-center justify-between bg-cinema-cardHighlight rounded p-2">
+                <span className="text-sm text-cinema-textMuted">
                   Replying to comment
                 </span>
                 <button
                   onClick={() => setReplyToId(null)}
-                  className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                  className="text-xs text-cinema-textMuted hover:text-cinema-text"
                 >
                   Cancel
                 </button>
@@ -447,27 +446,25 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
               placeholder={replyToId ? "Write your reply..." : "Write a comment..."}
               rows={4}
               maxLength={2000}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-2 border border-cinema-border rounded-lg bg-cinema-cardHighlight text-cinema-text placeholder-cinema-textMuted focus:outline-none focus:ring-2 focus:ring-cinema-accent resize-none"
             />
             
-            {/* Character counter */}
             <div className="mt-1 text-right">
               <span className={`text-xs ${
                 commentBody.length >= 2000
-                  ? 'text-red-600 dark:text-red-400'
+                  ? 'text-red-400'
                   : commentBody.length > 1800 
-                  ? 'text-orange-600 dark:text-orange-400' 
-                  : 'text-slate-500 dark:text-slate-400'
+                  ? 'text-orange-400' 
+                  : 'text-cinema-textMuted'
               }`}>
                 {commentBody.length} / 2000
               </span>
             </div>
             
-            {/* Image Upload Section */}
             <div className="mt-3">
               <label
                 htmlFor="comment-image-input"
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-cinema-textMuted border border-cinema-border rounded-lg cursor-pointer hover:bg-cinema-cardHighlight transition-colors"
               >
                 <Image className="h-4 w-4" />
                 <span>Add Image (optional)</span>
@@ -481,7 +478,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
               />
               
               {imageError && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {imageError}
                 </p>
@@ -493,7 +490,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="max-w-xs max-h-48 rounded-lg border border-slate-300 dark:border-slate-600"
+                      className="max-w-xs max-h-48 rounded-lg border border-cinema-border"
                     />
                     <button
                       onClick={handleRemoveImage}
@@ -503,7 +500,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
                       <XCircle className="h-4 w-4" />
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-xs text-cinema-textMuted">
                     {selectedImage?.name} ({(selectedImage?.size || 0) / 1024 / 1024 < 1 
                       ? `${Math.round((selectedImage?.size || 0) / 1024)} KB`
                       : `${((selectedImage?.size || 0) / 1024 / 1024).toFixed(2)} MB`})
@@ -513,13 +510,13 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
             </div>
             
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-cinema-textMuted">
                 Comments require approval before being displayed
               </p>
               <button
                 onClick={handleSubmitComment}
                 disabled={isSubmitting || !commentBody.trim() || commentBody.length > 2000}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="h-4 w-4" />
                 {isSubmitting ? 'Submitting...' : 'Submit'}
@@ -531,8 +528,8 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
 
       {/* Pending Comments Notice */}
       {pendingComments.length > 0 && (
-        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-          <p className="text-sm text-yellow-800 dark:text-yellow-300">
+        <div className="mb-4 bg-yellow-900/20 border border-cinema-border rounded-lg p-3">
+          <p className="text-sm text-yellow-300">
             You have {pendingComments.length} comment{pendingComments.length > 1 ? 's' : ''} pending approval
           </p>
         </div>

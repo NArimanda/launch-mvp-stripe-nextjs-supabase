@@ -260,19 +260,17 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-      {/* Debug info - remove this later */}
-      <div className="mb-4 p-2 bg-yellow-100 dark:bg-yellow-900 text-xs">
+    <div className="rounded-lg border border-cinema-border p-4 bg-cinema-card shadow-cinema-card">
+      <div className="mb-4 p-2 bg-cinema-cardHighlight border border-cinema-border rounded text-xs text-cinema-textMuted">
         Debug: User ID: {user?.id || 'Not authenticated'} | 
         User object: {user ? 'Present' : 'Missing'}
       </div>
 
-      {/* Market status message when disabled */}
       {isMarketDisabled && (
         <div className={`mb-4 p-3 rounded-lg border ${
           isMarketClosed 
-            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200'
-            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+            ? 'bg-orange-900/20 border-cinema-border text-orange-300'
+            : 'bg-red-900/20 border-cinema-border text-red-300'
         }`}>
           <div className="font-medium mb-1">
             {isMarketClosed ? '🔒 Market Closed' : '🏁 Market Resolved'}
@@ -286,7 +284,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
       )}
 
       <div className="mb-4">
-        <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">Select a range:</div>
+        <div className="text-sm text-cinema-textMuted mb-2">Select a range:</div>
         <RangeSlider 
           edges={binEdges}
           availableRanges={availableRanges}
@@ -318,7 +316,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
               : `${formatCurrency(dollarsToMillions(selectedRange.lower))} - ${formatCurrency(dollarsToMillions(selectedRange.upper!))}`);
           
           return (
-            <div className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+            <div className="mt-2 text-sm text-cinema-text">
               Range selected: <span className="font-medium">{displayLabel}</span>
             </div>
           );
@@ -326,7 +324,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
       </div>
 
       <div className="mb-4 flex items-center gap-3">
-        <label className="text-sm text-slate-600 dark:text-slate-300">Points:</label>
+        <label className="text-sm text-cinema-textMuted">Points:</label>
         <input
           type="number"
           min={1}
@@ -334,33 +332,33 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
           value={points}
           onChange={(e) => setPoints(parseInt(e.target.value || "0", 10))}
           disabled={isMarketDisabled || submitting}
-          className={`w-28 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm ${
+          className={`w-28 rounded-md border border-cinema-border bg-cinema-cardHighlight text-cinema-text px-2 py-1 text-sm ${
             isMarketDisabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
       </div>
 
       {selectedRange && (
-        <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
-          <div className="text-sm text-slate-600 dark:text-slate-300 mb-2">
+        <div className="mb-4 p-3 bg-cinema-cardHighlight rounded-lg border border-cinema-border">
+          <div className="text-sm text-cinema-textMuted mb-2">
             Bet Details:
           </div>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-600 dark:text-slate-300">Bins covered:</span>
-              <span className="font-medium text-slate-900 dark:text-white">
+              <span className="text-cinema-textMuted">Bins covered:</span>
+              <span className="font-medium text-cinema-text">
                 {computeSelectedBins} / {availableRanges.length}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600 dark:text-slate-300">Multiplier:</span>
-              <span className="font-medium text-slate-900 dark:text-white">
+              <span className="text-cinema-textMuted">Multiplier:</span>
+              <span className="font-medium text-cinema-text">
                 {multiplier.toFixed(2)}x
               </span>
             </div>
-            <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-600">
-              <span className="text-slate-700 dark:text-slate-200 font-medium">Potential payout:</span>
-              <span className="font-semibold text-slate-900 dark:text-white">
+            <div className="flex justify-between pt-1 border-t border-cinema-border">
+              <span className="text-cinema-text font-medium">Potential payout:</span>
+              <span className="font-semibold text-cinema-text">
                 {potentialPayout} pts
               </span>
             </div>
@@ -368,8 +366,8 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
         </div>
       )}
 
-      {error && <div className="mb-3 text-sm text-red-600">{error}</div>}
-      {ok && <div className="mb-3 text-sm text-green-600">{ok}</div>}
+      {error && <div className="mb-3 text-sm text-red-400">{error}</div>}
+      {ok && <div className="mb-3 text-sm text-green-400">{ok}</div>}
 
       <button
         type="button"
@@ -456,31 +454,28 @@ function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dolla
       {/* Track */}
       <div 
         ref={sliderRef}
-        className={`h-2 bg-slate-200 dark:bg-slate-600 rounded-full relative ${
+        className={`h-2 bg-cinema-cardHighlight rounded-full relative ${
           disabled ? 'cursor-not-allowed' : 'cursor-pointer'
         }`}
       >
-        {/* Selected range */}
         <div 
-          className="absolute h-full bg-blue-500 rounded-full"
+          className="absolute h-full bg-cinema-accent rounded-full"
           style={{
             left: `${lowerPercentage}%`,
             width: `${upperPercentage - lowerPercentage}%`
           }}
         />
         
-        {/* Lower thumb */}
         <div
-          className={`absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
+          className={`absolute top-1/2 w-4 h-4 bg-cinema-card border-2 border-cinema-accent rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
             disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
           }`}
           style={{ left: `${lowerPercentage}%` }}
           onMouseDown={handleMouseDown("lower")}
         />
         
-        {/* Upper thumb */}
         <div
-          className={`absolute top-1/2 w-4 h-4 bg-white border-2 border-blue-500 rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
+          className={`absolute top-1/2 w-4 h-4 bg-cinema-card border-2 border-cinema-accent rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
             disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
           }`}
           style={{ left: `${upperPercentage}%` }}
@@ -488,25 +483,23 @@ function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dolla
         />
       </div>
 
-      {/* Responsive Range Display */}
-      <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
+      <div className="mt-3 p-3 bg-cinema-cardHighlight rounded-lg border border-cinema-border">
         <div className="text-center">
-          <div className="text-sm text-slate-600 dark:text-slate-300 mb-1">Selected Range</div>
-          <div className="text-lg font-semibold text-slate-900 dark:text-white">
+          <div className="text-sm text-cinema-textMuted mb-1">Selected Range</div>
+          <div className="text-lg font-semibold text-cinema-text">
             {formatRangeDisplay()}
           </div>
-          <div className="text-xs text-slate-500 mt-1">
+          <div className="text-xs text-cinema-textMuted mt-1">
             Drag the handles to adjust your range
           </div>
         </div>
       </div>
 
-      {/* Tick marks */}
       <div className="flex justify-between mt-3">
         {edges.map((edge, index) => (
           <div
             key={index}
-            className="w-px h-2 bg-slate-300 dark:bg-slate-500"
+            className="w-px h-2 bg-cinema-border"
             title={formatValue(dollarsToMillions(edge))}
           />
         ))}

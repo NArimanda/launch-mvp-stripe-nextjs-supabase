@@ -48,12 +48,12 @@ export default function CountdownTimer({ closeTime, marketStatus }: CountdownTim
   return (
     <div className="flex flex-col items-end space-y-1">
       <div className="flex items-center space-x-2">
-        <div className="text-sm text-slate-600 dark:text-slate-400">Closes in:</div>
-        <div className="font-mono text-lg font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-md">
+        <div className="text-sm text-cinema-textMuted">Closes in:</div>
+        <div className="font-mono text-lg font-semibold text-cinema-text bg-cinema-cardHighlight px-3 py-1 rounded-md border border-cinema-border">
           {timeLeft}
         </div>
       </div>
-      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+      <div className="text-xs text-cinema-textMuted font-mono">
         days:hours:minutes
       </div>
     </div>

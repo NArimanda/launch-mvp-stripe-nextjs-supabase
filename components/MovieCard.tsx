@@ -20,7 +20,8 @@ function fmt(d?: string | null) {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(date);
 }
 
-const fallbackPoster = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect width='200' height='300' fill='%23e2e8f0'/%3E%3Ctext x='100' y='150' text-anchor='middle' fill='%2394a3b8' font-family='system-ui' font-size='16'%3ENo Image%3C/text%3E%3C/svg%3E";
+/* Placeholder poster: dark frame with muted "No poster" text (#A1A1AA ≈ zinc-400) */
+const fallbackPoster = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect width='200' height='300' fill='%230B0B0E'/%3E%3Ctext x='100' y='150' text-anchor='middle' fill='%23A1A1AA' font-family='system-ui' font-size='14'%3ENo poster%3C/text%3E%3C/svg%3E";
 
 function MovieCardCore({ slug, title, releaseDate, posterUrl, className = "" }: Props) {
   const [imageError, setImageError] = useState(false);
@@ -38,13 +39,13 @@ function MovieCardCore({ slug, title, releaseDate, posterUrl, className = "" }: 
   return (
     <Link
       href={`/movie/${slug}`}
-      className={`group block rounded-xl overflow-hidden bg-white dark:bg-slate-800 ring-1 ring-slate-200 dark:ring-slate-700 hover:shadow-md transition-all ${className}`}
+      className={`group block rounded-xl overflow-hidden bg-card-gradient border border-[rgba(239,68,68,0.25)] shadow-cinema-card hover:-translate-y-[4px] hover:shadow-cinema-card-hover transition-all duration-300 ${className}`}
       aria-label={`${title}${releaseDate ? ` — releases ${fmt(releaseDate)}` : ""}`}
     >
-      <div className="relative w-full aspect-[2/3] bg-slate-100 dark:bg-slate-700">
+      <div className="relative w-full aspect-[2/3] bg-cinema-page border-b border-[rgba(239,68,68,0.15)] overflow-hidden">
         {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-pulse bg-slate-200 dark:bg-slate-600 w-full h-full" />
+          <div className="absolute inset-0 flex items-center justify-center bg-cinema-page">
+            <div className="animate-pulse bg-cinema-cardHighlight w-full h-full" />
           </div>
         )}
         <Image
@@ -60,8 +61,8 @@ function MovieCardCore({ slug, title, releaseDate, posterUrl, className = "" }: 
         />
       </div>
       <div className="p-3">
-        <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
-        {releaseDate && <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{fmt(releaseDate)}</p>}
+        <h3 className="line-clamp-2 text-sm font-semibold text-cinema-text">{title}</h3>
+        {releaseDate && <p className="mt-1 text-xs text-cinema-textMuted">{fmt(releaseDate)}</p>}
       </div>
     </Link>
   );

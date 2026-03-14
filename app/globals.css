@@ -3,35 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --background: #F8F9FA;
-  --foreground: #2F3E46;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1A1B26;
-    --foreground: #F8F9FA;
-  }
+  --background: #121217;
+  --foreground: #F5F5F5;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background-color: #121217;
+  background-image: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(45, 17, 22, 0.6) 0%, #121217 50%);
   font-family: 'Inter', sans-serif;
+  min-height: 100vh;
 }
 
-/* Add some cooking-themed utility classes */
+/* Cinema-themed utility classes */
 @layer components {
   .recipe-card {
-    @apply bg-white dark:bg-neutral-dark rounded-lg shadow-sm border border-primary/10 dark:border-primary/20 transition-all duration-300 hover:shadow-md;
+    @apply bg-cinema-card rounded-lg shadow-cinema-card border border-cinema-border transition-all duration-300 hover:shadow-cinema-card-hover;
   }
   
   .cooking-button {
-    @apply bg-primary hover:bg-primary-dark text-white rounded-lg transition-all duration-300 transform hover:scale-102 active:scale-98;
+    @apply bg-primary hover:bg-primary-dark text-white rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98];
   }
   
   .accent-button {
-    @apply bg-secondary hover:bg-secondary-dark text-white rounded-lg transition-all duration-300;
+    @apply bg-cinema-accentWarm hover:opacity-90 text-white rounded-lg transition-all duration-300;
   }
 }
 

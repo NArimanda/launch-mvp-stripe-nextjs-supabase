@@ -20,21 +20,23 @@ export default function MovieRow({
   if (!movies.length) return null;
   return (
     <section className="mt-8">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold">{title}</h2>
-        {rightElement}
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">
-        {movies.map((m) => (
-          <MovieCard
-            key={m.id}
-            slug={m.slug}
-            title={m.title}
-            releaseDate={m.release_date}
-            posterUrl={m.image_url}
-            className="w-[150px] sm:w-[180px]"
-          />
-        ))}
+      <div className="rounded-2xl border border-[rgba(239,68,68,0.12)] bg-cinema-sectionPanel p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-2xl font-bold text-cinema-text">{title}</h2>
+          {rightElement}
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">
+          {movies.map((m) => (
+            <MovieCard
+              key={m.id}
+              slug={m.slug}
+              title={m.title}
+              releaseDate={m.release_date}
+              posterUrl={m.image_url}
+              className="w-[150px] sm:w-[180px]"
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

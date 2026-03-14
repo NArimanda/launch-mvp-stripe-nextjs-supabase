@@ -232,8 +232,8 @@ export default function MarketHeatmap({ marketId, timeframe }: MarketHeatmapProp
   
   if (loading) {
     return (
-      <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
-        <div className="text-center py-4 text-slate-600 dark:text-slate-400">
+      <div className="rounded-lg border border-cinema-border p-4 bg-cinema-card">
+        <div className="text-center py-4 text-cinema-textMuted">
           Loading heatmap...
         </div>
       </div>
@@ -249,10 +249,10 @@ export default function MarketHeatmap({ marketId, timeframe }: MarketHeatmapProp
   }
   
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
+    <div className="rounded-lg border border-cinema-border p-4 bg-cinema-card">
       {/* Debug info (dev only) */}
       {process.env.NODE_ENV === 'development' && debugInfo && (
-        <div className="mb-3 p-2 bg-slate-100 dark:bg-slate-700 rounded text-xs font-mono">
+        <div className="mb-3 p-2 bg-cinema-cardHighlight rounded text-xs font-mono text-cinema-textMuted">
           <div>Total bets: {debugInfo.totalBets}</div>
           <div>Total points: {formatPoints(debugInfo.totalPoints)}</div>
           <div>Max bin points: {formatPoints(debugInfo.maxBinPoints)}</div>
@@ -267,19 +267,19 @@ export default function MarketHeatmap({ marketId, timeframe }: MarketHeatmapProp
           
           return (
             <div key={row.id} className="flex items-center gap-3">
-              <div className="w-40 shrink-0 text-xs text-slate-600 dark:text-slate-300">
+              <div className="w-40 shrink-0 text-xs text-cinema-textMuted">
                 {row.label}
               </div>
-              <div className="flex-1 h-4 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden">
+              <div className="flex-1 h-4 bg-cinema-cardHighlight rounded overflow-hidden">
                 {row.points > 0 && (
                   <div
-                    className="h-full bg-blue-500/70 dark:bg-blue-400/70 transition-all"
+                    className="h-full bg-cinema-accent/70 transition-all"
                     style={{ width: `${widthPct}%` }}
                     title={`${formatPoints(row.points)} pts`}
                   />
                 )}
               </div>
-              <div className="w-28 text-right text-xs text-slate-600 dark:text-slate-300">
+              <div className="w-28 text-right text-xs text-cinema-textMuted">
                 {formatPoints(row.points)} pts
               </div>
             </div>

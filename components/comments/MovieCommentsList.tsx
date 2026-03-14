@@ -198,11 +198,11 @@ function CommentCard({
     setActionLoading(null);
   };
   return (
-    <div className={`${depth > 0 ? 'mt-4 border-l-2 border-slate-200 dark:border-slate-700 pl-4' : ''}`}>
-      <div className={`bg-white dark:bg-neutral-dark rounded-lg p-4 shadow-sm border ${
+    <div className={`${depth > 0 ? 'mt-4 border-l-2 border-cinema-border pl-4' : ''}`}>
+      <div className={`bg-cinema-card rounded-lg p-4 shadow-cinema-card border border-cinema-border ${
         (comment.isPending || comment.approved === false)
           ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/10' 
-          : 'border-slate-200 dark:border-slate-700'
+          : 'border-cinema-border'
       }`}>
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -212,14 +212,14 @@ function CommentCard({
                   href={`/${comment.username}/dashboard`}
                   className={`font-semibold hover:underline ${
                     userIsAdmin 
-                      ? 'text-green-700 dark:text-green-400' 
-                      : 'text-slate-900 dark:text-white'
+                      ? 'text-green-400' 
+                      : 'text-cinema-text'
                   }`}
                 >
                   {comment.username}
                 </Link>
                 {comment.author_total_value != null && comment.author_total_value !== undefined && (
-                  <span className="text-slate-500 dark:text-slate-400 ml-0.5">
+                  <span className="text-cinema-textMuted ml-0.5">
                     [{comment.author_total_value.toLocaleString()}]
                   </span>
                 )}
@@ -243,7 +243,7 @@ function CommentCard({
                 BANNED
               </span>
             )}
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-cinema-textMuted">
               {formatDate(comment.created_at)}
             </span>
             {(comment.isPending || comment.approved === false) && (
@@ -256,7 +256,7 @@ function CommentCard({
         
         <div 
           lang="en"
-          className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] [hyphens:auto]"
+          className="text-cinema-text mb-3 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] [hyphens:auto]"
         >
           {renderQuoteReferences ? renderQuoteReferences(comment.body) : comment.body}
         </div>
@@ -268,7 +268,7 @@ function CommentCard({
         
         {/* Position Snapshot Display */}
         {comment.position_market_type && comment.position_selected_range && typeof comment.position_points === 'number' && (
-          <div className="mb-3 text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded px-2 py-1 inline-block">
+          <div className="mb-3 text-xs text-cinema-textMuted bg-cinema-cardHighlight rounded px-2 py-1 inline-block">
             Position: <span className="font-medium capitalize">{comment.position_market_type}</span> | <span className="font-medium">{comment.position_selected_range}</span> | <span className="font-medium">{comment.position_points.toLocaleString()}</span> pts
           </div>
         )}
@@ -278,7 +278,7 @@ function CommentCard({
             <>
               {onReply && (
                 <button
-                  className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                  className="flex items-center gap-1 text-sm text-cinema-textMuted hover:text-slate-900 dark:hover:text-white transition-colors"
                   onClick={() => onReply(comment.id)}
                 >
                   <Reply className="h-4 w-4" />
@@ -350,7 +350,7 @@ function CommentCard({
             {depth >= MAX_THREAD_DEPTH && !expandedDepth ? (
               <button
                 onClick={() => setExpandedDepth(true)}
-                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline mt-2"
+                className="text-sm text-cinema-textMuted hover:text-slate-900 dark:hover:text-white underline mt-2"
               >
                 View deeper replies ({replies.length})
               </button>
@@ -379,7 +379,7 @@ function CommentCard({
                 {replies.length > visibleRepliesCount && (
                   <button
                     onClick={() => setVisibleRepliesCount(prev => prev + REPLIES_PAGE_SIZE)}
-                    className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline mt-2"
+                    className="text-sm text-cinema-textMuted hover:text-slate-900 dark:hover:text-white underline mt-2"
                   >
                     Show more replies ({replies.length - visibleRepliesCount} more)
                   </button>
@@ -616,11 +616,11 @@ export default function MovieCommentsList({
     return (
       <div className="mt-8">
         <div className="flex items-center gap-2 mb-4">
-          <MessageSquare className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+          <MessageSquare className="h-5 w-5 text-cinema-textMuted" />
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Comments</h2>
         </div>
         <div className="text-center py-8">
-          <p className="text-slate-600 dark:text-slate-400">Loading comments...</p>
+          <p className="text-cinema-textMuted">Loading comments...</p>
         </div>
       </div>
     );
@@ -630,11 +630,11 @@ export default function MovieCommentsList({
     return (
       <div className="mt-8">
         <div className="flex items-center gap-2 mb-4">
-          <MessageSquare className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Comments</h2>
+          <MessageSquare className="h-5 w-5 text-cinema-textMuted" />
+          <h2 className="text-xl font-semibold text-cinema-text">Comments</h2>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-600 dark:text-red-400">Error: {error}</p>
+        <div className="bg-red-900/20 border border-cinema-border rounded-lg p-4">
+          <p className="text-red-400">Error: {error}</p>
         </div>
       </div>
     );
@@ -647,16 +647,15 @@ export default function MovieCommentsList({
   return (
     <div className="mt-8">
       <div className="flex items-center gap-2 mb-4">
-        <MessageSquare className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+        <MessageSquare className="h-5 w-5 text-cinema-textMuted" />
+        <h2 className="text-xl font-semibold text-cinema-text">
           Comments {filteredComments.length > 0 && `(${filteredComments.length})`}
         </h2>
       </div>
       
-      {/* Admin Mode Banner */}
       {showAdminBanner && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-300 font-medium">
+        <div className="mb-4 p-3 bg-cinema-cardHighlight border border-cinema-border rounded-lg">
+          <p className="text-sm text-cinema-accent font-medium">
             Admin Mode: showing all pending comments ({pendingCountFetched} pending)
           </p>
         </div>
@@ -664,7 +663,7 @@ export default function MovieCommentsList({
       
       {/* Debug info (dev only) */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">
+        <div className="mb-4 p-2 bg-cinema-cardHighlight rounded text-xs font-mono text-cinema-textMuted">
           <div>User ID: {currentUserId || 'null'}</div>
           <div>Is Admin: {String(isUserAdmin || isAdmin)}</div>
           <div>Total fetched: {comments.length}</div>
@@ -675,9 +674,9 @@ export default function MovieCommentsList({
       )}
 
       {threadedComments.length === 0 ? (
-        <div className="bg-white dark:bg-neutral-dark rounded-lg p-8 text-center border border-slate-200 dark:border-slate-700">
-          <MessageSquare className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">No comments yet. Be the first to comment!</p>
+        <div className="bg-cinema-card rounded-lg p-8 text-center border border-cinema-border">
+          <MessageSquare className="h-12 w-12 text-cinema-textMuted mx-auto mb-4" />
+          <p className="text-cinema-textMuted">No comments yet. Be the first to comment!</p>
         </div>
       ) : (
         <>
@@ -701,7 +700,7 @@ export default function MovieCommentsList({
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loadingMore ? 'Loading...' : 'Show more'}
               </button>

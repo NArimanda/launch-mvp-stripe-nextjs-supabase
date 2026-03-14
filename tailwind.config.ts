@@ -10,40 +10,60 @@ export default {
   theme: {
     extend: {
       colors: {
+        cinema: {
+          page: '#121217',
+          sectionPanel: '#181820',
+          card: '#1A0A0D',
+          cardBase: '#2D1116',
+          cardGradientFrom: '#3A0F14',
+          cardGradientTo: '#24080C',
+          cardHighlight: '#2B0D13',
+          border: '#3A1218',
+          accent: '#EF4444',
+          accentWarm: '#F97316',
+          text: '#F5F5F5',
+          textMuted: '#A1A1AA',
+        },
         primary: {
-          DEFAULT: '#A78BFA', // Violet-400: Soft lavender
-          light: '#C4B5FD',   // Violet-300: Light lavender
-          dark: '#8B5CF6',    // Violet-500: Medium lavender
+          DEFAULT: '#EF4444', // Cinema accent red
+          light: '#F87171',
+          dark: '#DC2626',
         },
         danger: {
-          DEFAULT: '#DC2626', // Red-600: Clear red
-          light: '#F87171',   // Red-400: Soft red
-          dark: '#B91C1C',    // Red-700: Deep red
+          DEFAULT: '#DC2626',
+          light: '#F87171',
+          dark: '#B91C1C',
         },
         neutral: {
-          DEFAULT: '#F8FAFC', // Slate-50: Crisp light
-          dark: '#1E293B',    // Slate-800: Rich dark
-          darker: '#0F172A',  // Slate-900: Deep dark
+          DEFAULT: '#F8FAFC',
+          dark: '#121217',
+          darker: '#121217',
         },
         text: {
-          DEFAULT: '#0F172A', // Slate-900: Sharp text
-          light: '#64748B',   // Slate-500: Soft text
-          dark: '#F8FAFC',    // Slate-50: Light text
+          DEFAULT: '#0F172A',
+          light: '#64748B',
+          dark: '#F5F5F5',
         },
         surface: {
-          light: '#FFFFFF',   // Pure white
-          dark: '#1E293B',    // Slate-800: Rich surface
+          light: '#1A0A0D',
+          dark: '#121217',
         },
         accent: {
-          DEFAULT: '#38BDF8', // Sky-400: Fresh blue
-          light: '#7DD3FC',   // Sky-300: Soft blue
-          dark: '#0EA5E9',    // Sky-500: Deep blue
+          DEFAULT: '#EF4444',
+          light: '#F87171',
+          dark: '#DC2626',
         }
       },
       boxShadow: {
-        'subtle': '0 1px 3px rgba(0,0,0,0.05)',
-        'hover': '0 4px 6px -1px rgba(139, 92, 246, 0.1), 0 2px 4px -1px rgba(139, 92, 246, 0.06)', // Softer violet shadow
-      }
+        'subtle': '0 1px 3px rgba(0,0,0,0.2)',
+        'hover': '0 4px 12px -2px rgba(239, 68, 68, 0.15), 0 2px 6px -2px rgba(0,0,0,0.3)',
+        'cinema-card': '0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(58, 18, 24, 0.2)',
+        'cinema-card-hover': '0 10px 30px rgba(0,0,0,0.6), 0 0 0 1px rgba(239,68,68,0.15)',
+      },
+      backgroundImage: {
+        'card-gradient': 'linear-gradient(145deg, #3A0F14, #24080C)',
+        'hero-gradient': 'linear-gradient(145deg, #3A0F14, #24080C)',
+      },
     },
   },
   plugins: [],

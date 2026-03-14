@@ -101,16 +101,16 @@ export default async function MarketPage({
   const title = `${movie.title} — ${formatTimeframeTitle(timeframe)} ${formatTypeTitle(type)}`;
 
   return (
-    <div className="px-4 py-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-cinema-page px-4 py-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <Link href={`/movie/${movie.slug}`} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-4 inline-block">
+        <Link href={`/movie/${movie.slug}`} className="text-cinema-accent hover:text-cinema-accentWarm mb-4 inline-block">
           ← Back to {movie.title}
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{title}</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              Market status: <span className="font-medium">{market.status}</span>
+            <h1 className="text-3xl font-bold text-cinema-text">{title}</h1>
+            <p className="text-sm text-cinema-textMuted mt-1">
+              Market status: <span className="font-medium text-cinema-text">{market.status}</span>
               {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
             </p>
             <UnresolveMarketButton marketId={market.id} marketStatus={market.status} />

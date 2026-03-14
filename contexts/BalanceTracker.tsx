@@ -34,7 +34,7 @@ export default function BalanceTracker({
     async function fetchBalance() {
       if (!userId) {
         setBalance(null);
-        setLoading(false);
+        setInternalLoading(false);
         return;
       }
       try {
@@ -91,8 +91,8 @@ export default function BalanceTracker({
   const textClasses = useMemo(
     () =>
       compact
-        ? 'text-[11px] leading-none text-gray-600 dark:text-gray-300'
-        : 'text-sm text-gray-700 dark:text-gray-200',
+        ? 'text-[11px] leading-none text-cinema-textMuted'
+        : 'text-sm text-cinema-text',
     [compact]
   );
 

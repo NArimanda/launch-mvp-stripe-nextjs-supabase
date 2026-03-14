@@ -130,7 +130,7 @@ function StatsCardModal({
 
     try {
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#020617', // dark navy background for contrast
+        backgroundColor: '#0B0B0E',
       });
 
       canvas.toBlob((blob) => {
@@ -150,15 +150,15 @@ function StatsCardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-slate-900 text-white rounded-xl shadow-2xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="bg-cinema-card border border-cinema-border text-cinema-text rounded-xl shadow-cinema-card w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cinema-border">
+          <h3 className="text-sm font-semibold tracking-wide uppercase text-cinema-textMuted">
             Stats Card Preview
           </h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-sm px-2 py-1 rounded-md hover:bg-slate-800"
+            className="text-cinema-textMuted hover:text-cinema-text text-sm px-2 py-1 rounded-md hover:bg-cinema-cardHighlight"
           >
             Close
           </button>
@@ -167,45 +167,45 @@ function StatsCardModal({
         <div className="px-4 py-4 space-y-4">
           <div
             ref={cardRef}
-            className="bg-slate-950 rounded-lg px-6 py-5 shadow-inner border border-slate-800"
+            className="bg-cinema-cardHighlight rounded-lg px-6 py-5 shadow-inner border border-cinema-border"
           >
-            <h4 className="text-base font-semibold mb-4 tracking-wide text-slate-100">
+            <h4 className="text-base font-semibold mb-4 tracking-wide text-cinema-text">
               Box Office Bandits – Stats
             </h4>
 
             <div className="space-y-2 text-sm">
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Username</span>
-                <span className="font-medium text-slate-100">{username}</span>
+                <span className="text-cinema-textMuted">Username</span>
+                <span className="font-medium text-cinema-text">{username}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Available Points</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Available Points</span>
+                <span className="font-medium text-cinema-text">
                   {availablePoints.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Total Value</span>
-                <span className="font-medium text-emerald-300">
+                <span className="text-cinema-textMuted">Total Value</span>
+                <span className="font-medium text-emerald-400">
                   ${totalValue.toFixed(2)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Prediction Accuracy</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Prediction Accuracy</span>
+                <span className="font-medium text-cinema-text">
                   {accuracyPercent}
                   {accuracyPercent !== '--' ? '%' : ''}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Total Predictions</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Total Predictions</span>
+                <span className="font-medium text-cinema-text">
                   {totalPredictions.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Pending Predictions</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Pending Predictions</span>
+                <span className="font-medium text-cinema-text">
                   {pendingPredictions.toLocaleString()}
                 </span>
               </div>
@@ -215,7 +215,7 @@ function StatsCardModal({
           <div className="flex items-center justify-end gap-3 pt-1">
             <button
               onClick={handleDownload}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary hover:bg-primary-dark text-white transition-colors"
             >
               Download PNG
             </button>
@@ -248,7 +248,7 @@ function BetCardModal({
 
     try {
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#020617',
+        backgroundColor: '#0B0B0E',
       });
 
       canvas.toBlob((blob) => {
@@ -278,15 +278,15 @@ function BetCardModal({
     : 'N/A';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-slate-900 text-white rounded-xl shadow-2xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-          <h3 className="text-sm font-semibold tracking-wide uppercase text-slate-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="bg-cinema-card border border-cinema-border text-cinema-text rounded-xl shadow-cinema-card w-full max-w-md mx-4">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cinema-border">
+          <h3 className="text-sm font-semibold tracking-wide uppercase text-cinema-textMuted">
             {isHistory ? 'Bet Card – Settled' : 'Bet Card – Pending'}
           </h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-sm px-2 py-1 rounded-md hover:bg-slate-800"
+            className="text-cinema-textMuted hover:text-cinema-text text-sm px-2 py-1 rounded-md hover:bg-cinema-cardHighlight"
           >
             Close
           </button>
@@ -295,58 +295,58 @@ function BetCardModal({
         <div className="px-4 py-4 space-y-4">
           <div
             ref={cardRef}
-            className="bg-slate-950 rounded-lg px-6 py-5 shadow-inner border border-slate-800"
+            className="bg-cinema-cardHighlight rounded-lg px-6 py-5 shadow-inner border border-cinema-border"
           >
-            <h4 className="text-base font-semibold mb-4 tracking-wide text-slate-100">
+            <h4 className="text-base font-semibold mb-4 tracking-wide text-cinema-text">
               Box Office Bandits – Bet
             </h4>
 
             <div className="space-y-2 text-sm">
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Movie Title</span>
-                <span className="font-medium text-slate-100">{bet.movie.slug}</span>
+                <span className="text-cinema-textMuted">Movie Title</span>
+                <span className="font-medium text-cinema-text">{bet.movie.slug}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Release Date</span>
-                <span className="font-medium text-slate-100">{bet.movie.release_date}</span>
+                <span className="text-cinema-textMuted">Release Date</span>
+                <span className="font-medium text-cinema-text">{bet.movie.release_date}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Market Type</span>
-                <span className="font-medium text-slate-100">{bet.market.type}</span>
+                <span className="text-cinema-textMuted">Market Type</span>
+                <span className="font-medium text-cinema-text">{bet.market.type}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Timeframe</span>
-                <span className="font-medium text-slate-100">{bet.market.timeframe}</span>
+                <span className="text-cinema-textMuted">Timeframe</span>
+                <span className="font-medium text-cinema-text">{bet.market.timeframe}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Selected Range</span>
-                <span className="font-medium text-slate-100">{bet.selected_range}</span>
+                <span className="text-cinema-textMuted">Selected Range</span>
+                <span className="font-medium text-cinema-text">{bet.selected_range}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Points Wagered</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Points Wagered</span>
+                <span className="font-medium text-cinema-text">
                   {bet.points.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Potential Payout</span>
-                <span className="font-medium text-emerald-300">
+                <span className="text-cinema-textMuted">Potential Payout</span>
+                <span className="font-medium text-emerald-400">
                   {bet.potential_payout.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Bet Status</span>
-                <span className="font-medium text-slate-100">{bet.status}</span>
+                <span className="text-cinema-textMuted">Bet Status</span>
+                <span className="font-medium text-cinema-text">{bet.status}</span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Outcome</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Outcome</span>
+                <span className="font-medium text-cinema-text">
                   {bet.outcome || 'Pending'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <span className="text-slate-400">Placed At</span>
-                <span className="font-medium text-slate-100">
+                <span className="text-cinema-textMuted">Placed At</span>
+                <span className="font-medium text-cinema-text">
                   {formattedPlacedAt}
                 </span>
               </div>
@@ -356,7 +356,7 @@ function BetCardModal({
           <div className="flex items-center justify-end gap-3 pt-1">
             <button
               onClick={handleDownload}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary hover:bg-primary-dark text-white transition-colors"
             >
               Download PNG
             </button>
@@ -391,12 +391,12 @@ export default function UserDashboardContent({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120]">
+    <div className="min-h-screen bg-cinema-page">
       {/* Portfolio Header */}
-      <div className="bg-white dark:bg-neutral-dark border-b border-slate-200 dark:border-slate-700">
+      <div className="bg-cinema-card border-b border-cinema-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-cinema-text">
               {isOwnDashboard ? 'Portfolio' : `${username}'s Dashboard`}
             </h1>
           </div>
@@ -408,14 +408,14 @@ export default function UserDashboardContent({
         {/* Portfolio Balance Section - show for own and other user dashboards */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-xl font-semibold text-cinema-text">
               Portfolio Balance
             </h2>
             {isOwnDashboard && (
               <button
                 type="button"
                 onClick={() => setIsStatsModalOpen(true)}
-                className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-cinema-border text-cinema-text hover:bg-cinema-cardHighlight transition-colors"
               >
                 View Stats Card
               </button>
@@ -424,19 +424,19 @@ export default function UserDashboardContent({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700"
+            className="bg-cinema-card rounded-xl p-6 shadow-cinema-card border border-cinema-border"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-6">
                 <div className="flex items-center space-x-3">
-                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                    <Wallet className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  <div className="p-3 bg-green-900/30 rounded-lg border border-cinema-border">
+                    <Wallet className="h-6 w-6 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Available Points</p>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                    <p className="text-sm text-cinema-textMuted">Available Points</p>
+                    <div className="text-2xl font-bold text-cinema-text">
                       {loading ? (
-                        <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 w-24 rounded"></div>
+                        <div className="animate-pulse bg-cinema-cardHighlight h-8 w-24 rounded"></div>
                       ) : (
                         formatCurrency(balance || 0)
                       )}
@@ -450,16 +450,16 @@ export default function UserDashboardContent({
               </div>
               <div className="text-right space-y-1">
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Total Value</p>
-                  <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                  <p className="text-sm text-cinema-textMuted">Total Value</p>
+                  <div className="text-lg font-semibold text-green-400">
                     {loading ? (
-                      <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-6 w-16 rounded"></div>
+                      <div className="animate-pulse bg-cinema-cardHighlight h-6 w-16 rounded"></div>
                     ) : (
                       `$${totalValue.toFixed(2)}`
                     )}
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                <div className="mt-2 text-xs text-cinema-textMuted space-y-0.5">
                   <div>
                     Prediction Accuracy:{' '}
                     {accuracyPercent != null ? `${accuracyPercent}%` : '--'}
@@ -478,13 +478,13 @@ export default function UserDashboardContent({
 
         {/* Tabs */}
         <div className="mb-6">
-          <div className="flex items-center space-x-1 bg-white dark:bg-neutral-dark rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center space-x-1 bg-cinema-card rounded-lg p-1 border border-cinema-border">
             <button
               onClick={() => setActiveTab('pending')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'pending'
-                  ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-cinema-cardHighlight text-cinema-accent'
+                  : 'text-cinema-textMuted hover:text-cinema-text'
               }`}
             >
               <Activity className="h-4 w-4" />
@@ -494,8 +494,8 @@ export default function UserDashboardContent({
               onClick={() => setActiveTab('history')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'history'
-                  ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-cinema-cardHighlight text-cinema-accent'
+                  : 'text-cinema-textMuted hover:text-cinema-text'
               }`}
             >
               <History className="h-4 w-4" />
@@ -508,19 +508,19 @@ export default function UserDashboardContent({
         {activeTab === 'pending' ? (
           /* Pending Bets Section */
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-xl font-semibold text-cinema-text mb-4">
               Pending Bets ({pendingBets.length})
             </h2>
           
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div key={i} className="bg-cinema-card rounded-xl p-6 shadow-cinema-card border border-cinema-border">
                     <div className="animate-pulse">
                       <div className="space-y-2">
-                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                        <div className="h-4 bg-cinema-cardHighlight rounded w-3/4"></div>
+                        <div className="h-3 bg-cinema-cardHighlight rounded w-1/2"></div>
+                        <div className="h-3 bg-cinema-cardHighlight rounded w-1/3"></div>
                       </div>
                     </div>
                   </div>
@@ -530,13 +530,13 @@ export default function UserDashboardContent({
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-neutral-dark rounded-xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 text-center"
+                className="bg-cinema-card rounded-xl p-8 shadow-cinema-card border border-cinema-border text-center"
               >
-                <Activity className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                <Activity className="h-12 w-12 text-cinema-textMuted mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-cinema-text mb-2">
                   No Pending Bets
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400">
+                <p className="text-cinema-textMuted">
                   {isOwnDashboard 
                     ? "You haven't placed any bets yet. Start predicting movie performance to see your bets here!"
                     : `${username} hasn't placed any pending bets.`}
@@ -550,22 +550,22 @@ export default function UserDashboardContent({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
+                    className="bg-cinema-card rounded-xl p-6 shadow-cinema-card border border-cinema-border hover:shadow-cinema-card-hover transition-shadow"
                   >
                     <div className="flex items-start space-x-4">
                       {/* Movie Poster */}
-                      <div className="relative w-16 h-24 flex-shrink-0">
+                      <div className="relative w-16 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-cinema-page border border-cinema-border">
                         {bet.movie.image_url ? (
                           <Image
                             src={bet.movie.image_url}
                             alt={bet.movie.slug}
                             fill
-                            className="object-cover rounded-lg"
+                            className="object-cover"
                             sizes="64px"
                           />
                         ) : (
-                          <div className="w-full h-full bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                            <span className="text-xs text-slate-500">No Image</span>
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-xs text-cinema-textMuted">No poster</span>
                           </div>
                         )}
                       </div>
@@ -574,44 +574,44 @@ export default function UserDashboardContent({
                       <div className="flex-1 min-w-0">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Movie</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.movie.slug}</p>
+                            <p className="text-sm text-cinema-textMuted">Movie</p>
+                            <p className="font-medium text-cinema-text">{bet.movie.slug}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Release Date</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.movie.release_date}</p>
+                            <p className="text-sm text-cinema-textMuted">Release Date</p>
+                            <p className="font-medium text-cinema-text">{bet.movie.release_date}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Market Type</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.market.type}</p>
+                            <p className="text-sm text-cinema-textMuted">Market Type</p>
+                            <p className="font-medium text-cinema-text">{bet.market.type}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Timeframe</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.market.timeframe}</p>
+                            <p className="text-sm text-cinema-textMuted">Timeframe</p>
+                            <p className="font-medium text-cinema-text">{bet.market.timeframe}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Selected Range</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.selected_range}</p>
+                            <p className="text-sm text-cinema-textMuted">Selected Range</p>
+                            <p className="font-medium text-cinema-text">{bet.selected_range}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Points</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{formatCurrency(bet.points)}</p>
+                            <p className="text-sm text-cinema-textMuted">Points</p>
+                            <p className="font-medium text-cinema-text">{formatCurrency(bet.points)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Potential Payout</p>
-                            <p className="font-medium text-green-600 dark:text-green-400">{formatCurrency(bet.potential_payout)}</p>
+                            <p className="text-sm text-cinema-textMuted">Potential Payout</p>
+                            <p className="font-medium text-green-400">{formatCurrency(bet.potential_payout)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Bet Status</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.status}</p>
+                            <p className="text-sm text-cinema-textMuted">Bet Status</p>
+                            <p className="font-medium text-cinema-text">{bet.status}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Outcome</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.outcome || 'Pending'}</p>
+                            <p className="text-sm text-cinema-textMuted">Outcome</p>
+                            <p className="font-medium text-cinema-text">{bet.outcome || 'Pending'}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Placed At</p>
-                            <p className="font-medium text-slate-900 dark:text-white">
+                            <p className="text-sm text-cinema-textMuted">Placed At</p>
+                            <p className="font-medium text-cinema-text">
                               {bet.placed_at ? new Date(bet.placed_at).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
@@ -628,7 +628,7 @@ export default function UserDashboardContent({
                       <button
                         type="button"
                         onClick={() => setActiveBetModal({ bet, isHistory: false })}
-                        className="inline-flex text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="inline-flex text-xs text-cinema-accent hover:underline"
                       >
                         View Bet Card
                       </button>
@@ -641,19 +641,19 @@ export default function UserDashboardContent({
         ) : (
           /* History Section */
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-xl font-semibold text-cinema-text mb-4">
               Bet History ({historyBets.length})
             </h2>
             
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div key={i} className="bg-cinema-card rounded-xl p-6 shadow-cinema-card border border-cinema-border">
                     <div className="animate-pulse">
                       <div className="space-y-2">
-                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-                        <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                        <div className="h-4 bg-cinema-cardHighlight rounded w-3/4"></div>
+                        <div className="h-3 bg-cinema-cardHighlight rounded w-1/2"></div>
+                        <div className="h-3 bg-cinema-cardHighlight rounded w-1/3"></div>
                       </div>
                     </div>
                   </div>
@@ -663,13 +663,13 @@ export default function UserDashboardContent({
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-neutral-dark rounded-xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 text-center"
+                className="bg-cinema-card rounded-xl p-8 shadow-cinema-card border border-cinema-border text-center"
               >
-                <History className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                <History className="h-12 w-12 text-cinema-textMuted mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-cinema-text mb-2">
                   No Bet History
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400">
+                <p className="text-cinema-textMuted">
                   {isOwnDashboard 
                     ? "You haven't completed any bets yet. Your resolved bets will appear here!"
                     : `${username} hasn't completed any bets yet.`}
@@ -683,22 +683,22 @@ export default function UserDashboardContent({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-white dark:bg-neutral-dark rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
+                    className="bg-cinema-card rounded-xl p-6 shadow-cinema-card border border-cinema-border hover:shadow-cinema-card-hover transition-shadow"
                   >
                     <div className="flex items-start space-x-4">
                       {/* Movie Poster */}
-                      <div className="relative w-16 h-24 flex-shrink-0">
+                      <div className="relative w-16 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-cinema-page border border-cinema-border">
                         {bet.movie.image_url ? (
                           <Image
                             src={bet.movie.image_url}
                             alt={bet.movie.slug}
                             fill
-                            className="object-cover rounded-lg"
+                            className="object-cover"
                             sizes="64px"
                           />
                         ) : (
-                          <div className="w-full h-full bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                            <span className="text-xs text-slate-500">No Image</span>
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-xs text-cinema-textMuted">No poster</span>
                           </div>
                         )}
                       </div>
@@ -707,12 +707,12 @@ export default function UserDashboardContent({
                       <div className="flex-1 min-w-0">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Movie</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.movie.slug}</p>
+                            <p className="text-sm text-cinema-textMuted">Movie</p>
+                            <p className="font-medium text-cinema-text">{bet.movie.slug}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Placed At</p>
-                            <p className="font-medium text-slate-900 dark:text-white">
+                            <p className="text-sm text-cinema-textMuted">Placed At</p>
+                            <p className="font-medium text-cinema-text">
                               {bet.placed_at ? new Date(bet.placed_at).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
@@ -723,42 +723,42 @@ export default function UserDashboardContent({
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Market Type</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.market.type}</p>
+                            <p className="text-sm text-cinema-textMuted">Market Type</p>
+                            <p className="font-medium text-cinema-text">{bet.market.type}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Timeframe</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.market.timeframe}</p>
+                            <p className="text-sm text-cinema-textMuted">Timeframe</p>
+                            <p className="font-medium text-cinema-text">{bet.market.timeframe}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Selected Range</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.selected_range}</p>
+                            <p className="text-sm text-cinema-textMuted">Selected Range</p>
+                            <p className="font-medium text-cinema-text">{bet.selected_range}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Points</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{formatCurrency(bet.points)}</p>
+                            <p className="text-sm text-cinema-textMuted">Points</p>
+                            <p className="font-medium text-cinema-text">{formatCurrency(bet.points)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Potential Payout</p>
-                            <p className="font-medium text-green-600 dark:text-green-400">{formatCurrency(bet.potential_payout)}</p>
+                            <p className="text-sm text-cinema-textMuted">Potential Payout</p>
+                            <p className="font-medium text-green-400">{formatCurrency(bet.potential_payout)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Bet Status</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{bet.status}</p>
+                            <p className="text-sm text-cinema-textMuted">Bet Status</p>
+                            <p className="font-medium text-cinema-text">{bet.status}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Bet Result</p>
+                            <p className="text-sm text-cinema-textMuted">Bet Result</p>
                             <p className={`font-medium ${
-                              bet.outcome === 'won' ? 'text-green-600 dark:text-green-400' :
-                              bet.outcome === 'lost' ? 'text-red-600 dark:text-red-400' :
-                              'text-yellow-600 dark:text-yellow-400'
+                              bet.outcome === 'won' ? 'text-green-400' :
+                              bet.outcome === 'lost' ? 'text-red-400' :
+                              'text-yellow-400'
                             }`}>
                               {bet.outcome ? (bet.outcome.charAt(0).toUpperCase() + bet.outcome.slice(1)) : 'N/A'}
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Box Office Outcome</p>
-                            <p className="font-medium text-slate-900 dark:text-white">
+                            <p className="text-sm text-cinema-textMuted">Box Office Outcome</p>
+                            <p className="font-medium text-cinema-text">
                               {bet.market.outcome !== null && bet.market.outcome !== undefined 
                                 ? (() => {
                                     const valueInMillions = Number(bet.market.outcome) / 1000000;
@@ -774,7 +774,7 @@ export default function UserDashboardContent({
                       <button
                         type="button"
                         onClick={() => setActiveBetModal({ bet, isHistory: true })}
-                        className="inline-flex text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        className="inline-flex text-xs text-cinema-accent hover:underline"
                       >
                         View Bet Card
                       </button>

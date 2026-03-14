@@ -66,20 +66,19 @@ export function AccountManagement() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-      <h2 className="text-xl font-semibold mb-4">Account Management</h2>
+    <div className="bg-cinema-card border border-cinema-border rounded-lg shadow-cinema-card p-6 mb-8">
+      <h2 className="text-xl font-semibold text-cinema-text mb-4">Account Management</h2>
       
-      {/* User Information */}
-      <div className="mb-6 space-y-2">
+      <div className="mb-6 space-y-2 text-cinema-text">
         <p><span className="font-medium">Email:</span> {user?.email}</p>
         <p><span className="font-medium">Last Sign In:</span> {new Date(user?.last_sign_in_at || '').toLocaleString()}</p>
         <p><span className="font-medium">Account Type:</span> {isOAuthUser ? 'Google Account' : 'Email Account'}</p>
         <p>
           <span className="font-medium">Admin Status:</span>{' '}
           {loadingAdmin ? (
-            <span className="text-slate-500 dark:text-slate-400">Loading...</span>
+            <span className="text-cinema-textMuted">Loading...</span>
           ) : (
-            <span className={isAdmin ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-slate-600 dark:text-slate-400'}>
+            <span className={isAdmin ? 'text-green-400 font-semibold' : 'text-cinema-textMuted'}>
               {isAdmin ? 'True' : 'False'}
             </span>
           )}
@@ -90,7 +89,7 @@ export function AccountManagement() {
         {!isOAuthUser && (
           <button
             onClick={() => router.push(`/reset-password?email=${encodeURIComponent(user?.email || '')}`)}
-            className="block w-full text-left px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="block w-full text-left px-4 py-2 bg-cinema-cardHighlight border border-cinema-border text-cinema-text rounded-lg hover:bg-cinema-border"
           >
             Reset Password
           </button>
@@ -98,18 +97,17 @@ export function AccountManagement() {
 
         <button
           onClick={() => setIsDeleteModalOpen(true)}
-          className="w-full text-left px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50"
+          className="w-full text-left px-4 py-2 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50 border border-cinema-border"
         >
           Delete Account
         </button>
       </div>
 
-      {/* Delete Account Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-xl font-semibold mb-4">Delete Account?</h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-cinema-card border border-cinema-border rounded-lg p-6 max-w-md w-full shadow-cinema-card">
+            <h3 className="text-xl font-semibold text-cinema-text mb-4">Delete Account?</h3>
+            <p className="text-cinema-textMuted mb-6">
               This action cannot be undone. All your data will be permanently deleted.
             </p>
             {error && (
@@ -118,7 +116,7 @@ export function AccountManagement() {
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300"
+                className="px-4 py-2 text-cinema-textMuted hover:text-cinema-text"
               >
                 Cancel
               </button>

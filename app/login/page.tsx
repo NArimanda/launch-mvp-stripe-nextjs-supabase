@@ -69,21 +69,20 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-cinema-page">
+        <div className="text-cinema-text">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Temporary debug info */}
+    <div className="min-h-screen bg-cinema-page">
       {clientUserId && (
-        <div className="bg-blue-100 p-2 text-xs">
+        <div className="bg-cinema-card border-b border-cinema-border p-2 text-xs text-cinema-textMuted">
           Client User ID: {clientUserId}
         </div>
       )}
-      <div className="min-h-screen flex mt-20 justify-center bg-background px-4">
+      <div className="min-h-screen flex mt-20 justify-center px-4">
         <div className="w-full max-w-md">
           {/* <h1 className="text-4xl font-bold text-center mb-8 text-primary dark:text-white">
             NextTemp

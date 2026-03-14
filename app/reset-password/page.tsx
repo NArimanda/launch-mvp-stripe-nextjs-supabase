@@ -41,11 +41,11 @@ function ResetPasswordContent() {
 
   if (!email) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen bg-cinema-page flex items-center justify-center p-4">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold">Invalid Request</h2>
-            <p className="mt-2 text-gray-600 dark:text-gray-300">
+            <h2 className="text-3xl font-bold text-cinema-text">Invalid Request</h2>
+            <p className="mt-2 text-cinema-textMuted">
               No email address provided. Please try the reset password link again.
             </p>
           </div>
@@ -55,21 +55,21 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cinema-page flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold">Reset Password</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">
-            Sending reset link to: <span className="font-medium">{email}</span>
+          <h2 className="text-3xl font-bold text-cinema-text">Reset Password</h2>
+          <p className="mt-2 text-cinema-textMuted">
+            Sending reset link to: <span className="font-medium text-cinema-text">{email}</span>
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 text-red-500 p-4 rounded-lg">
+          <div className="bg-red-900/30 border border-cinema-border text-red-400 p-4 rounded-lg">
             {error}
             <button
               onClick={handleResetPassword}
-              className="ml-2 underline hover:text-red-600"
+              className="ml-2 underline hover:text-red-300"
             >
               Try again
             </button>
@@ -77,11 +77,11 @@ function ResetPasswordContent() {
         )}
 
         {success ? (
-          <div className="bg-green-50 dark:bg-green-900/30 text-green-500 p-4 rounded-lg">
+          <div className="bg-green-900/30 border border-cinema-border text-green-400 p-4 rounded-lg">
             Reset link has been sent to your email address. Please check your inbox.
           </div>
         ) : (
-          <div className="text-center text-gray-600 dark:text-gray-300">
+          <div className="text-center text-cinema-textMuted">
             {isLoading ? 'Sending reset link...' : 'Processing your request...'}
           </div>
         )}
