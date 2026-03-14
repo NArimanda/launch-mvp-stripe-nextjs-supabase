@@ -25,7 +25,7 @@ export default function MovieRow({
           <h2 className="text-2xl font-bold text-cinema-text">{title}</h2>
           {rightElement}
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">
+        <div className="scrollbar-cinema flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">
           {movies.map((m) => (
             <MovieCard
               key={m.id}

@@ -30,6 +30,30 @@ body {
   }
 }
 
+/* Cinema-themed horizontal scrollbar (movie rows) */
+.scrollbar-cinema {
+  scrollbar-width: thin;
+  scrollbar-color: #7A1C22 #181820;
+}
+
+.scrollbar-cinema::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-cinema::-webkit-scrollbar-track {
+  background: #181820;
+  border-radius: 3px;
+}
+
+.scrollbar-cinema::-webkit-scrollbar-thumb {
+  background: #7A1C22;
+  border-radius: 3px;
+}
+
+.scrollbar-cinema::-webkit-scrollbar-thumb:hover {
+  background: #9a2430;
+}
+
 /* Hide scrollbar styles */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
