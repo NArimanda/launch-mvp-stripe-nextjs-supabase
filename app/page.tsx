@@ -52,19 +52,17 @@ export default async function Home() {
 
   return (
     <main className="px-4 py-6 max-w-7xl mx-auto">
-      {/* Releasing Soon - First row */}
-      <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
-      
       {/* Instructions Section */}
       <InstructionsSection />
-      
+
+      {/* Releasing Soon - First row */}
+      <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
+
       {/* In Theaters and Recent Archive Section */}
-      <div className="mt-8 flex items-center justify-end mb-4">
-        <SearchBar />
-      </div>
-      
       {!!(inTheaters && inTheaters.length) && <MovieRow title="In Theaters" movies={inTheaters} />}
-      {!!(archiveMovies && archiveMovies.length) && <MovieRow title="Recent Archive" movies={archiveMovies} />}
+      {!!(archiveMovies && archiveMovies.length) && (
+        <MovieRow title="Recent Archive" movies={archiveMovies} rightElement={<SearchBar />} />
+      )}
     </main>
   );
 }

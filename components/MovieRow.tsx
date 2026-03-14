@@ -8,11 +8,22 @@ type Movie = {
   release_date: string | null;
 };
 
-export default function MovieRow({ title, movies = [] as Movie[] }: { title: string; movies: Movie[] }) {
+export default function MovieRow({
+  title,
+  movies = [] as Movie[],
+  rightElement,
+}: {
+  title: string;
+  movies: Movie[];
+  rightElement?: React.ReactNode;
+}) {
   if (!movies.length) return null;
   return (
     <section className="mt-8">
-      <h2 className="mb-4 text-2xl font-bold">{title}</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold">{title}</h2>
+        {rightElement}
+      </div>
       <div className="flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">
         {movies.map((m) => (
           <MovieCard
