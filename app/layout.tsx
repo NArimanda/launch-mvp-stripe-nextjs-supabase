@@ -1,5 +1,5 @@
 import React from "react";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import TopBar from '../components/TopBar';
@@ -7,7 +7,7 @@ import ProtectedRoute from '@/contexts/ProtectedRoute';
 import { Analytics } from "@vercel/analytics/react";
 import { metadata } from "./metadata";
 
-const geist = Geist({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
 export { metadata };
 
@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={geist.className}>
+      <body className={inter.className}>
         <Analytics mode="auto" />
         <AuthProvider>   
             <ProtectedRoute>

@@ -72,89 +72,12 @@ for (let i = 0; i < 8; i++) {
   });
 }
 
-// C) 30–80M step 10M (5 buckets)
-for (let i = 0; i < 5; i++) {
-  const lowerM = 30 + i * 10;
-  const upperM = 30 + (i + 1) * 10;
-  OPENING_WEEKEND_BUCKETS.push({
-    id: `ow_${lowerM}_${upperM}m`,
-    label: createLabel(lowerM, upperM),
-    lower: lowerM * 1_000_000,
-    upper: upperM * 1_000_000,
-    sort: 18 + i,
-  });
-}
-
-// D) 80–150M step 25M (3 buckets): 80–105, 105–130, 130–150
-for (let i = 0; i < 3; i++) {
-  const lowerM = 80 + i * 25;
-  const upperM = i === 2 ? 150 : 80 + (i + 1) * 25; // Last bucket ends at 150, not 155
-  OPENING_WEEKEND_BUCKETS.push({
-    id: `ow_${lowerM}_${upperM}m`,
-    label: createLabel(lowerM, upperM),
-    lower: lowerM * 1_000_000,
-    upper: upperM * 1_000_000,
-    sort: 23 + i,
-  });
-}
-
-// E) 150–400M step 50M (5 buckets)
-for (let i = 0; i < 5; i++) {
-  const lowerM = 150 + i * 50;
-  const upperM = 150 + (i + 1) * 50;
-  OPENING_WEEKEND_BUCKETS.push({
-    id: `ow_${lowerM}_${upperM}m`,
-    label: createLabel(lowerM, upperM),
-    lower: lowerM * 1_000_000,
-    upper: upperM * 1_000_000,
-    sort: 26 + i,
-  });
-}
-
-// F) 400M+ (1 bucket)
-OPENING_WEEKEND_BUCKETS.push({
-  id: `ow_400m_plus`,
-  label: createLabel(400, null),
-  lower: 400 * 1_000_000,
-  upper: null,
-  sort: 31,
-});
-
-// ONE_MONTH buckets (bounds in MILLIONS, stored as DOLLARS)
-const ONE_MONTH_BUCKETS: RangeBucket[] = [];
-
-// A) 0–10M step 1M (10 buckets)
+// C) 30–80M step 5M (10 buckets)
 for (let i = 0; i < 10; i++) {
-  const lowerM = i;
-  const upperM = i + 1;
-  ONE_MONTH_BUCKETS.push({
-    id: `m_${lowerM}_${upperM}m`,
-    label: createLabel(lowerM, upperM),
-    lower: lowerM * 1_000_000,
-    upper: upperM * 1_000_000,
-    sort: i,
-  });
-}
-
-// B) 10–50M step 5M (8 buckets)
-for (let i = 0; i < 8; i++) {
-  const lowerM = 10 + i * 5;
-  const upperM = 10 + (i + 1) * 5;
-  ONE_MONTH_BUCKETS.push({
-    id: `m_${lowerM}_${upperM}m`,
-    label: createLabel(lowerM, upperM),
-    lower: lowerM * 1_000_000,
-    upper: upperM * 1_000_000,
-    sort: 10 + i,
-  });
-}
-
-// C) 50–200M step 25M (6 buckets)
-for (let i = 0; i < 6; i++) {
-  const lowerM = 50 + i * 25;
-  const upperM = 50 + (i + 1) * 25;
-  ONE_MONTH_BUCKETS.push({
-    id: `m_${lowerM}_${upperM}m`,
+  const lowerM = 30 + i * 5;
+  const upperM = 30 + (i + 1) * 5;
+  OPENING_WEEKEND_BUCKETS.push({
+    id: `ow_${lowerM}_${upperM}m`,
     label: createLabel(lowerM, upperM),
     lower: lowerM * 1_000_000,
     upper: upperM * 1_000_000,
@@ -162,38 +85,25 @@ for (let i = 0; i < 6; i++) {
   });
 }
 
-// D) 200–500M step 50M (6 buckets)
-for (let i = 0; i < 6; i++) {
-  const lowerM = 200 + i * 50;
-  const upperM = 200 + (i + 1) * 50;
-  ONE_MONTH_BUCKETS.push({
-    id: `m_${lowerM}_${upperM}m`,
+// D) 80–150M step 10M (7 buckets)
+for (let i = 0; i < 7; i++) {
+  const lowerM = 80 + i * 10;
+  const upperM = 80 + (i + 1) * 10;
+  OPENING_WEEKEND_BUCKETS.push({
+    id: `ow_${lowerM}_${upperM}m`,
     label: createLabel(lowerM, upperM),
     lower: lowerM * 1_000_000,
     upper: upperM * 1_000_000,
-    sort: 24 + i,
+    sort: 28 + i,
   });
 }
 
-// E) 500–1000M step 100M (5 buckets)
-for (let i = 0; i < 5; i++) {
-  const lowerM = 500 + i * 100;
-  const upperM = 500 + (i + 1) * 100;
-  ONE_MONTH_BUCKETS.push({
-    id: `m_${lowerM}_${upperM}m`,
-    label: createLabel(lowerM, upperM),
-    lower: lowerM * 1_000_000,
-    upper: upperM * 1_000_000,
-    sort: 30 + i,
-  });
-}
-
-// F) 1.0–2.5B step 250M (6 buckets)
-for (let i = 0; i < 6; i++) {
-  const lowerM = 1000 + i * 250;
-  const upperM = 1000 + (i + 1) * 250;
-  ONE_MONTH_BUCKETS.push({
-    id: `m_${formatIdAmount(lowerM)}_${formatIdAmount(upperM)}`,
+// E) 150–200M step 25M (2 buckets)
+for (let i = 0; i < 2; i++) {
+  const lowerM = 150 + i * 25;
+  const upperM = 150 + (i + 1) * 25;
+  OPENING_WEEKEND_BUCKETS.push({
+    id: `ow_${lowerM}_${upperM}m`,
     label: createLabel(lowerM, upperM),
     lower: lowerM * 1_000_000,
     upper: upperM * 1_000_000,
@@ -201,13 +111,90 @@ for (let i = 0; i < 6; i++) {
   });
 }
 
-// G) 2.5B+ (1 bucket)
-ONE_MONTH_BUCKETS.push({
-  id: `m_2_5b_plus`,
-  label: createLabel(2500, null),
-  lower: 2500 * 1_000_000,
+// F) 200M+ (1 bucket)
+OPENING_WEEKEND_BUCKETS.push({
+  id: `ow_200m_plus`,
+  label: createLabel(200, null),
+  lower: 200 * 1_000_000,
   upper: null,
-  sort: 41,
+  sort: 37,
+});
+
+// ONE_MONTH buckets (bounds in MILLIONS, stored as DOLLARS)
+const ONE_MONTH_BUCKETS: RangeBucket[] = [];
+
+// A) 0–20M step 2.5M (8 buckets)
+for (let i = 0; i < 8; i++) {
+  const lowerM = i * 2.5;
+  const upperM = (i + 1) * 2.5;
+  ONE_MONTH_BUCKETS.push({
+    id: `m_${formatIdAmount(lowerM)}_${formatIdAmount(upperM)}`,
+    label: createLabel(lowerM, upperM),
+    lower: Math.round(lowerM * 1_000_000),
+    upper: Math.round(upperM * 1_000_000),
+    sort: i,
+  });
+}
+
+// B) 20–60M step 5M (8 buckets)
+for (let i = 0; i < 8; i++) {
+  const lowerM = 20 + i * 5;
+  const upperM = 20 + (i + 1) * 5;
+  ONE_MONTH_BUCKETS.push({
+    id: `m_${lowerM}_${upperM}m`,
+    label: createLabel(lowerM, upperM),
+    lower: lowerM * 1_000_000,
+    upper: upperM * 1_000_000,
+    sort: 8 + i,
+  });
+}
+
+// C) 60–150M step 10M (9 buckets)
+for (let i = 0; i < 9; i++) {
+  const lowerM = 60 + i * 10;
+  const upperM = 60 + (i + 1) * 10;
+  ONE_MONTH_BUCKETS.push({
+    id: `m_${lowerM}_${upperM}m`,
+    label: createLabel(lowerM, upperM),
+    lower: lowerM * 1_000_000,
+    upper: upperM * 1_000_000,
+    sort: 16 + i,
+  });
+}
+
+// D) 150–300M step 25M (6 buckets)
+for (let i = 0; i < 6; i++) {
+  const lowerM = 150 + i * 25;
+  const upperM = 150 + (i + 1) * 25;
+  ONE_MONTH_BUCKETS.push({
+    id: `m_${lowerM}_${upperM}m`,
+    label: createLabel(lowerM, upperM),
+    lower: lowerM * 1_000_000,
+    upper: upperM * 1_000_000,
+    sort: 25 + i,
+  });
+}
+
+// E) 300–600M step 50M (6 buckets)
+for (let i = 0; i < 6; i++) {
+  const lowerM = 300 + i * 50;
+  const upperM = 300 + (i + 1) * 50;
+  ONE_MONTH_BUCKETS.push({
+    id: `m_${lowerM}_${upperM}m`,
+    label: createLabel(lowerM, upperM),
+    lower: lowerM * 1_000_000,
+    upper: upperM * 1_000_000,
+    sort: 31 + i,
+  });
+}
+
+// F) 600M+ (1 bucket)
+ONE_MONTH_BUCKETS.push({
+  id: `m_600m_plus`,
+  label: createLabel(600, null),
+  lower: 600 * 1_000_000,
+  upper: null,
+  sort: 37,
 });
 
 export const BOX_OFFICE_RANGES: Record<MarketType, RangeBucket[]> = {

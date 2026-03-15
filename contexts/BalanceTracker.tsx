@@ -12,6 +12,8 @@ type Props = {
   value?: number | null;
   /** When using value, parent can control loading state. */
   loading?: boolean;
+  /** When set with value, show wallet balance as a subscript line below the main total. */
+  walletBalance?: number | null;
 };
 
 export default function BalanceTracker({
@@ -21,6 +23,7 @@ export default function BalanceTracker({
   prefixIcon,
   value: valueProp,
   loading: loadingProp,
+  walletBalance: walletBalanceProp,
 }: Props) {
   const { user, supabase } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
@@ -102,13 +105,22 @@ export default function BalanceTracker({
   const displayValue = useOverride ? valueProp : (balance ?? 0);
   const displayLoading = useOverride ? (loadingProp ?? false) : internalLoading;
 
+  const showSubscript = walletBalanceProp !== undefined && walletBalanceProp !== null && useOverride;
+
   return (
-    <div className={`inline-flex items-center gap-1 ${className}`}>
-      {prefixIcon ? <span className="opacity-70">{prefixIcon}</span> : null}
-      <span className={textClasses}>
-        {displayLoading ? '…' : displayValue.toLocaleString()}
-        {showLabel ? ' points' : ''}
-      </span>
+    <div className={`inline-flex flex-col items-start gap-0 ${className}`}>
+      <div className="inline-flex items-center gap-1">
+        {prefixIcon ? <span className="opacity-70">{prefixIcon}</span> : null}
+        <span className={textClasses}>
+          {displayLoading ? '…' : displayValue.toLocaleString()}
+          {showLabel ? ' points' : ''}
+        </span>
+      </div>
+      {showSubscript && (
+        <span className="text-[11px] leading-none text-cinema-textMuted">
+          wallet: {walletBalanceProp.toLocaleString()} points
+        </span>
+      )}
     </div>
   );
 }

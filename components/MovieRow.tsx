@@ -22,7 +22,7 @@ export default function MovieRow({
     <section className="mt-8">
       <div className="rounded-2xl border border-[rgba(239,68,68,0.12)] bg-cinema-sectionPanel p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold text-cinema-text">{title}</h2>
+          <h2 className="text-[22px] font-semibold tracking-[0.2px] text-cinema-text">{title}</h2>
           {rightElement}
         </div>
         <div className="scrollbar-cinema flex gap-4 overflow-x-auto pb-2 [&>*]:shrink-0">

@@ -18,6 +18,7 @@ export default function TopBar() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
   const [netBalance, setNetBalance] = useState<number | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
   // State for tracking logout process
@@ -63,6 +64,7 @@ export default function TopBar() {
     async function calculateNetBalance() {
       if (!user?.id) {
         setNetBalance(null);
+        setWalletBalance(null);
         setIsLoadingBalance(false);
         return;
       }
@@ -81,12 +83,14 @@ export default function TopBar() {
           console.error('Error fetching wallet:', walletError);
           if (!cancelled) {
             setNetBalance(null);
+            setWalletBalance(null);
             setIsLoadingBalance(false);
           }
           return;
         }
 
         const balance = wallet?.balance ?? 0;
+        if (!cancelled) setWalletBalance(balance);
 
         // Fetch locked bets (bets with outcome NULL or 'pending' in markets with status 'open' or 'locked')
         const { data: lockedRows, error: lockedErr } = await supabase
@@ -161,9 +165,9 @@ export default function TopBar() {
   return (
     <div className="w-full bg-cinema-card border-b border-cinema-border">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-5">
-        <Link href="/" className="text-lg sm:text-xl font-medium text-cinema-text flex items-center gap-2.5 hover:opacity-80 transition-opacity my-0">
+        <Link href="/" className="text-cinema-text flex items-center gap-2.5 hover:opacity-80 transition-opacity my-0">
           <Image src="/man-on-phone.svg" alt="BoxOfficeCalls" width={44} height={40} className="h-10 w-auto object-contain" />
-          <span className="font-sans">BoxOfficeCalls</span>
+          <span className="text-[20px] font-bold">BoxOfficeCalls</span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -205,14 +209,14 @@ export default function TopBar() {
                   <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary text-lg font-medium">
                     {user.email?.[0].toUpperCase()}
                   </div>
-                  <BalanceTracker value={netBalance} loading={isLoadingBalance} compact={false} />
+                  <BalanceTracker value={netBalance} loading={isLoadingBalance} compact={false} walletBalance={walletBalance} />
                 </button>
                 
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-52 bg-cinema-card rounded-lg shadow-cinema-card py-1 z-[60] border border-cinema-border">
                     <Link
                       href="/profile"
-                      className="block px-4 py-1.5 text-base text-cinema-text hover:bg-cinema-cardHighlight"
+                      className="block px-4 py-1.5 text-[13px] font-normal text-cinema-text hover:bg-cinema-cardHighlight"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsDropdownOpen(false);
@@ -224,7 +228,7 @@ export default function TopBar() {
                     <button
                       onClick={handleLogout}
                       disabled={isLoggingOut}
-                      className="block w-full text-left px-4 py-1.5 text-base text-danger hover:bg-cinema-cardHighlight disabled:opacity-50"
+                      className="block w-full text-left px-4 py-1.5 text-[13px] font-normal text-danger hover:bg-cinema-cardHighlight disabled:opacity-50"
                     >
                       {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
                     </button>

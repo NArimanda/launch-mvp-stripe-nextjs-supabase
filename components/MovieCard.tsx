@@ -61,8 +61,8 @@ function MovieCardCore({ slug, title, releaseDate, posterUrl, className = "" }: 
         />
       </div>
       <div className="p-3">
-        <h3 className="line-clamp-2 text-sm font-semibold text-cinema-text">{title}</h3>
-        {releaseDate && <p className="mt-1 text-xs text-cinema-textMuted">{fmt(releaseDate)}</p>}
+        <h3 className="line-clamp-2 text-[15px] font-semibold leading-[1.3] text-cinema-text">{title}</h3>
+        {releaseDate && <p className="mt-[4px] text-[13px] font-normal text-cinema-textMuted">{fmt(releaseDate)}</p>}
       </div>
     </Link>
   );

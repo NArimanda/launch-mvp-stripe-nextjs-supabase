@@ -11,8 +11,13 @@ body {
   color: var(--foreground);
   background-color: #121217;
   background-image: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(45, 17, 22, 0.6) 0%, #121217 50%);
-  font-family: 'Inter', sans-serif;
   min-height: 100vh;
+}
+
+/* Typography: small UI text */
+.type-small-ui {
+  font-weight: 400;
+  font-size: 13px;
 }
 
 /* Cinema-themed utility classes */
