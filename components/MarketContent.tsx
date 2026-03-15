@@ -40,15 +40,6 @@ export default function MarketContent({ marketId, bins, stats, type, timeframe, 
 
   return (
     <>
-      {/* Heatmap / distribution */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-cinema-text mb-3">Current Sentiment</h2>
-        <MarketHeatmap
-          marketId={marketId}
-          timeframe={timeframe}
-        />
-      </div>
-
       {/* Bet form */}
       <div className="mb-10 relative">
         <h2 className="text-xl font-semibold text-cinema-text mb-3">
@@ -88,6 +79,15 @@ export default function MarketContent({ marketId, bins, stats, type, timeframe, 
             </div>
           )}
         </div>
+      </div>
+
+      {/* Heatmap / distribution */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-cinema-text mb-3">Current Sentiment</h2>
+        <MarketHeatmap
+          marketId={marketId}
+          timeframe={timeframe}
+        />
       </div>
     </>
   );

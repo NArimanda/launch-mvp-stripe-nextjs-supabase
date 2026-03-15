@@ -113,14 +113,17 @@ export default async function MarketPage({
               Market status: <span className="font-medium text-cinema-text">{market.status}</span>
               {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
             </p>
-            <UnresolveMarketButton marketId={market.id} marketStatus={market.status} />
-            <ResolveMarketForm marketId={market.id} marketStatus={market.status} />
           </div>
           <CountdownTimer closeTime={market.close_time} marketStatus={market.status} />
         </div>
       </div>
 
       <MarketContentWrapper marketId={market.id} bins={bins} stats={stats} type={type} timeframe={timeframe} marketStatus={market.status} />
+
+      <div className="mb-8">
+        <UnresolveMarketButton marketId={market.id} marketStatus={market.status} />
+        <ResolveMarketForm marketId={market.id} marketStatus={market.status} />
+      </div>
 
       <MovieComments movieId={movie.id} />
     </div>
