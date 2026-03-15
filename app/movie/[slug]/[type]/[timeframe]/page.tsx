@@ -35,6 +35,12 @@ function formatTypeTitle(t: string) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+function getMarketSubtitle(timeframe: string, type: string): string {
+  if (timeframe === "weekend") return "Opening Weekend (Worldwide)";
+  if (timeframe === "month") return "First Month (Worldwide)";
+  return `${formatTimeframeTitle(timeframe)} (${formatTypeTitle(type)})`;
+}
+
 export default async function MarketPage({
   params,
 }: {
@@ -98,7 +104,7 @@ export default async function MarketPage({
     no_bets: 0
   }));
 
-  const title = `${movie.title} — ${formatTimeframeTitle(timeframe)} ${formatTypeTitle(type)}`;
+  const marketSubtitle = getMarketSubtitle(timeframe, type);
 
   return (
     <div className="min-h-screen bg-cinema-page px-4 py-6 max-w-5xl mx-auto">
@@ -108,7 +114,8 @@ export default async function MarketPage({
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-cinema-text">{title}</h1>
+            <h1 className="text-3xl font-bold text-cinema-text">{movie.title}</h1>
+            <p className="text-lg text-cinema-textMuted mt-1">{marketSubtitle}</p>
             <p className="text-sm text-cinema-textMuted mt-1">
               Market status: <span className="font-medium text-cinema-text">{market.status}</span>
               {market.end_time ? ` • Ends ${new Date(market.end_time).toLocaleString()}` : ""}
