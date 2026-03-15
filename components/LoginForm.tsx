@@ -31,9 +31,9 @@ export function LoginForm({
     <div className="w-full space-y-8 p-8 bg-cinema-card rounded-2xl shadow-cinema-card border border-cinema-border">
       <div className="text-center">
         <div className="flex items-center justify-center gap-2 mb-6">
-          <span className="text-3xl">🎬</span>
+          <Image src="/man-on-phone.svg" alt="BoxOfficeCalls" width={48} height={42} className="h-10 w-auto object-contain" />
           <h2 className="text-2xl font-medium text-cinema-text">
-            NextTemp
+            BoxOfficeCalls
           </h2>
         </div>
       </div>

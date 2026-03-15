@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import BalanceTracker from '@/contexts/BalanceTracker';
 import { supabase } from '@/utils/supabase';
 
@@ -159,10 +160,10 @@ export default function TopBar() {
 
   return (
     <div className="w-full bg-cinema-card border-b border-cinema-border">
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-3">
-        <Link href="/" className="text-md sm:text-lg font-medium text-cinema-text flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-2xl">🎬</span>
-          <span className="font-sans">NextTemp</span>
+      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-5">
+        <Link href="/" className="text-lg sm:text-xl font-medium text-cinema-text flex items-center gap-2.5 hover:opacity-80 transition-opacity my-0">
+          <Image src="/man-on-phone.svg" alt="BoxOfficeCalls" width={44} height={40} className="h-10 w-auto object-contain" />
+          <span className="font-sans">BoxOfficeCalls</span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -170,7 +171,7 @@ export default function TopBar() {
             <>
               <Link
                 href="/login"
-                className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-subtle hover:shadow-hover"
+                className="px-5 py-1.5 text-base font-medium text-white bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-subtle hover:shadow-hover"
               >
                 Sign in
               </Link>
@@ -181,7 +182,7 @@ export default function TopBar() {
                 {user && !isLoadingBalance && netBalance !== null && netBalance < 500 && (
                   <Link
                     href="/dashboard"
-                    className="hidden sm:block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
+                    className="hidden sm:block px-5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-full text-base font-medium transition-colors shadow-subtle hover:shadow-hover"
                   >
                     restore balance to 500
                   </Link>
@@ -189,7 +190,7 @@ export default function TopBar() {
                 {pathname !== '/dashboard' && (
                   <button
                     onClick={() => router.push('/dashboard')}
-                    className="hidden sm:block px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
+                    className="hidden sm:block px-5 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-full text-base font-medium transition-colors shadow-subtle hover:shadow-hover"
                   >
                     Dashboard
                   </button>
@@ -199,19 +200,19 @@ export default function TopBar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 hover:bg-cinema-cardHighlight px-3 py-2 rounded-full transition-colors"
+                  className="flex items-center gap-2.5 hover:bg-cinema-cardHighlight px-4 py-1.5 rounded-full transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary">
+                  <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary text-lg font-medium">
                     {user.email?.[0].toUpperCase()}
                   </div>
-                  <BalanceTracker value={netBalance} loading={isLoadingBalance} />
+                  <BalanceTracker value={netBalance} loading={isLoadingBalance} compact={false} />
                 </button>
                 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-cinema-card rounded-lg shadow-cinema-card py-1 z-[60] border border-cinema-border">
+                  <div className="absolute right-0 mt-2 w-52 bg-cinema-card rounded-lg shadow-cinema-card py-1 z-[60] border border-cinema-border">
                     <Link
                       href="/profile"
-                      className="block px-4 py-2 text-sm text-cinema-text hover:bg-cinema-cardHighlight"
+                      className="block px-4 py-1.5 text-base text-cinema-text hover:bg-cinema-cardHighlight"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsDropdownOpen(false);
@@ -223,7 +224,7 @@ export default function TopBar() {
                     <button
                       onClick={handleLogout}
                       disabled={isLoggingOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-danger hover:bg-cinema-cardHighlight disabled:opacity-50"
+                      className="block w-full text-left px-4 py-1.5 text-base text-danger hover:bg-cinema-cardHighlight disabled:opacity-50"
                     >
                       {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
                     </button>

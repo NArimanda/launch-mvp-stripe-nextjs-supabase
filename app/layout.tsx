@@ -5,8 +5,11 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import TopBar from '../components/TopBar';
 import ProtectedRoute from '@/contexts/ProtectedRoute';
 import { Analytics } from "@vercel/analytics/react";
+import { metadata } from "./metadata";
 
 const geist = Geist({ subsets: ['latin'] });
+
+export { metadata };
 
 export default function RootLayout({
   children,
