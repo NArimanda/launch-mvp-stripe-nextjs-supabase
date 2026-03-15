@@ -45,8 +45,8 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
   if (!movie) return notFound();
 
   const marketButtons = [
-    { title: "Weekend", timeframe: "weekend" },
-    { title: "Month", timeframe: "month" },
+    { title: "Opening Weekend", timeframe: "weekend" },
+    { title: "First Month", timeframe: "month" },
   ];
 
   return (
@@ -71,13 +71,13 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-cinema-text mb-4">Markets (Worldwide)</h2>
+        <h2 className="text-lg font-semibold text-cinema-text mb-5">Markets (Worldwide)</h2>
         <div className="flex flex-row flex-wrap gap-3">
           {marketButtons.map((button) => (
             <Link
               key={`worldwide-${button.title}`}
               href={`/movie/${movie.slug}/worldwide/${button.timeframe}`}
-              className="bg-primary hover:bg-primary-dark text-white font-semibold py-4 px-6 rounded-lg text-center transition-colors duration-200 shadow-cinema-card hover:shadow-cinema-card-hover"
+              className="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-[22px] rounded-lg text-center transition-colors duration-200 shadow-cinema-card hover:shadow-cinema-card-hover"
             >
               {button.title}
             </Link>

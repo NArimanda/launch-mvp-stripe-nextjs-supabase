@@ -39,6 +39,8 @@ interface MovieCommentsListProps {
   onReply?: (commentId: string) => void;
   renderQuoteReferences?: (text: string) => React.ReactNode;
   isAdmin?: boolean;
+  /** Rendered after the Comments header, before the comment list (e.g. composer, pending notice). */
+  renderAfterHeader?: React.ReactNode;
 }
 
 function formatDate(dateString: string): string {
@@ -399,7 +401,8 @@ export default function MovieCommentsList({
   pendingComments = [],
   onReply,
   renderQuoteReferences,
-  isAdmin = false
+  isAdmin = false,
+  renderAfterHeader,
 }: MovieCommentsListProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -619,6 +622,7 @@ export default function MovieCommentsList({
           <MessageSquare className="h-5 w-5 text-cinema-textMuted" />
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Comments</h2>
         </div>
+        {renderAfterHeader}
         <div className="text-center py-8">
           <p className="text-cinema-textMuted">Loading comments...</p>
         </div>
@@ -633,6 +637,7 @@ export default function MovieCommentsList({
           <MessageSquare className="h-5 w-5 text-cinema-textMuted" />
           <h2 className="text-xl font-semibold text-cinema-text">Comments</h2>
         </div>
+        {renderAfterHeader}
         <div className="bg-red-900/20 border border-cinema-border rounded-lg p-4">
           <p className="text-red-400">Error: {error}</p>
         </div>
@@ -652,7 +657,7 @@ export default function MovieCommentsList({
           Comments {filteredComments.length > 0 && `(${filteredComments.length})`}
         </h2>
       </div>
-      
+      {renderAfterHeader}
       {showAdminBanner && (
         <div className="mb-4 p-3 bg-cinema-cardHighlight border border-cinema-border rounded-lg">
           <p className="text-sm text-cinema-accent font-medium">

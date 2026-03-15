@@ -405,144 +405,141 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
         </div>
       )}
 
-      {/* Comment Composer */}
-      <div id="comment-composer" className="mb-6">
-        {!user ? (
-          <div className="bg-cinema-card rounded-lg p-4 border border-cinema-border">
-            <p className="text-cinema-textMuted text-center">
-              <button
-                onClick={() => router.push('/login')}
-                className="text-cinema-accent hover:text-cinema-accentWarm underline"
-              >
-                Sign in
-              </button>
-              {' '}to comment
-            </p>
-          </div>
-        ) : !username ? (
-          <div className="bg-cinema-card rounded-lg p-4 border border-cinema-border">
-            <p className="text-cinema-textMuted text-center">
-              Please set your username to comment
-            </p>
-          </div>
-        ) : (
-          <div className="bg-cinema-card rounded-lg p-4 shadow-cinema-card border border-cinema-border">
-            {replyToId && (
-              <div className="mb-3 flex items-center justify-between bg-cinema-cardHighlight rounded p-2">
-                <span className="text-sm text-cinema-textMuted">
-                  Replying to comment
-                </span>
-                <button
-                  onClick={() => setReplyToId(null)}
-                  className="text-xs text-cinema-textMuted hover:text-cinema-text"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-            <textarea
-              value={commentBody}
-              onChange={(e) => setCommentBody(e.target.value)}
-              placeholder={replyToId ? "Write your reply..." : "Write a comment..."}
-              rows={4}
-              maxLength={2000}
-              className="w-full px-4 py-2 border border-cinema-border rounded-lg bg-cinema-cardHighlight text-cinema-text placeholder-cinema-textMuted focus:outline-none focus:ring-2 focus:ring-cinema-accent resize-none"
-            />
-            
-            <div className="mt-1 text-right">
-              <span className={`text-xs ${
-                commentBody.length >= 2000
-                  ? 'text-red-400'
-                  : commentBody.length > 1800 
-                  ? 'text-orange-400' 
-                  : 'text-cinema-textMuted'
-              }`}>
-                {commentBody.length} / 2000
-              </span>
-            </div>
-            
-            <div className="mt-3">
-              <label
-                htmlFor="comment-image-input"
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm text-cinema-textMuted border border-cinema-border rounded-lg cursor-pointer hover:bg-cinema-cardHighlight transition-colors"
-              >
-                <Image className="h-4 w-4" />
-                <span>Add Image (optional)</span>
-              </label>
-              <input
-                id="comment-image-input"
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              
-              {imageError && (
-                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {imageError}
-                </p>
-              )}
-              
-              {imagePreview && (
-                <div className="mt-3 relative inline-block">
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="max-w-xs max-h-48 rounded-lg border border-cinema-border"
-                    />
-                    <button
-                      onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-lg"
-                      type="button"
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-cinema-textMuted">
-                    {selectedImage?.name} ({(selectedImage?.size || 0) / 1024 / 1024 < 1 
-                      ? `${Math.round((selectedImage?.size || 0) / 1024)} KB`
-                      : `${((selectedImage?.size || 0) / 1024 / 1024).toFixed(2)} MB`})
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-cinema-textMuted">
-                Comments require approval before being displayed
-              </p>
-              <button
-                onClick={handleSubmitComment}
-                disabled={isSubmitting || !commentBody.trim() || commentBody.length > 2000}
-                className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Send className="h-4 w-4" />
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Pending Comments Notice */}
-      {pendingComments.length > 0 && (
-        <div className="mb-4 bg-yellow-900/20 border border-cinema-border rounded-lg p-3">
-          <p className="text-sm text-yellow-300">
-            You have {pendingComments.length} comment{pendingComments.length > 1 ? 's' : ''} pending approval
-          </p>
-        </div>
-      )}
-
-      {/* Comments List */}
-      <MovieCommentsList 
-        movieId={movieId} 
+      {/* Comments List (header, then composer + pending notice via renderAfterHeader, then list) */}
+      <MovieCommentsList
+        movieId={movieId}
         mode={isAdmin ? 'admin' : 'public'}
         pendingComments={pendingComments}
         onReply={handleReply}
         renderQuoteReferences={renderQuoteReferences}
         isAdmin={isAdmin}
+        renderAfterHeader={
+          <>
+            {/* Comment Composer */}
+            <div id="comment-composer" className="mb-6">
+              {!user ? (
+                <div className="bg-cinema-card rounded-lg p-4 border border-cinema-border">
+                  <p className="text-cinema-textMuted text-center">
+                    <button
+                      onClick={() => router.push('/login')}
+                      className="text-cinema-accent hover:text-cinema-accentWarm underline"
+                    >
+                      Sign in
+                    </button>
+                    {' '}to comment
+                  </p>
+                </div>
+              ) : !username ? (
+                <div className="bg-cinema-card rounded-lg p-4 border border-cinema-border">
+                  <p className="text-cinema-textMuted text-center">
+                    Please set your username to comment
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-cinema-card rounded-lg p-4 shadow-cinema-card border border-cinema-border">
+                  {replyToId && (
+                    <div className="mb-3 flex items-center justify-between bg-cinema-cardHighlight rounded p-2">
+                      <span className="text-sm text-cinema-textMuted">
+                        Replying to comment
+                      </span>
+                      <button
+                        onClick={() => setReplyToId(null)}
+                        className="text-xs text-cinema-textMuted hover:text-cinema-text"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                  <textarea
+                    value={commentBody}
+                    onChange={(e) => setCommentBody(e.target.value)}
+                    placeholder={replyToId ? "Write your reply..." : "Write a comment..."}
+                    rows={4}
+                    maxLength={2000}
+                    className="w-full px-4 py-2 border border-cinema-border rounded-lg bg-cinema-cardHighlight text-cinema-text placeholder-cinema-textMuted focus:outline-none focus:ring-2 focus:ring-cinema-accent resize-none"
+                  />
+                  <div className="mt-1 text-right">
+                    <span className={`text-xs ${
+                      commentBody.length >= 2000
+                        ? 'text-red-400'
+                        : commentBody.length > 1800
+                        ? 'text-orange-400'
+                        : 'text-cinema-textMuted'
+                    }`}>
+                      {commentBody.length} / 2000
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <label
+                      htmlFor="comment-image-input"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-sm text-cinema-textMuted border border-cinema-border rounded-lg cursor-pointer hover:bg-cinema-cardHighlight transition-colors"
+                    >
+                      <Image className="h-4 w-4" />
+                      <span>Add Image (optional)</span>
+                    </label>
+                    <input
+                      id="comment-image-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    {imageError && (
+                      <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {imageError}
+                      </p>
+                    )}
+                    {imagePreview && (
+                      <div className="mt-3 relative inline-block">
+                        <div className="relative">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="max-w-xs max-h-48 rounded-lg border border-cinema-border"
+                          />
+                          <button
+                            onClick={handleRemoveImage}
+                            className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-lg"
+                            type="button"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <p className="mt-1 text-xs text-cinema-textMuted">
+                          {selectedImage?.name} ({(selectedImage?.size || 0) / 1024 / 1024 < 1
+                            ? `${Math.round((selectedImage?.size || 0) / 1024)} KB`
+                            : `${((selectedImage?.size || 0) / 1024 / 1024).toFixed(2)} MB`})
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-xs text-cinema-textMuted">
+                      Comments require approval before being displayed
+                    </p>
+                    <button
+                      onClick={handleSubmitComment}
+                      disabled={isSubmitting || !commentBody.trim() || commentBody.length > 2000}
+                      className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Send className="h-4 w-4" />
+                      {isSubmitting ? 'Submitting...' : 'Submit'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Pending Comments Notice */}
+            {pendingComments.length > 0 && (
+              <div className="mb-4 bg-yellow-900/20 border border-cinema-border rounded-lg p-3">
+                <p className="text-sm text-yellow-300">
+                  You have {pendingComments.length} comment{pendingComments.length > 1 ? 's' : ''} pending approval
+                </p>
+              </div>
+            )}
+          </>
+        }
       />
     </div>
   );
