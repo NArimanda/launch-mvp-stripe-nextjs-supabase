@@ -665,18 +665,6 @@ export default function MovieCommentsList({
           </p>
         </div>
       )}
-      
-      {/* Debug info (dev only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-2 bg-cinema-cardHighlight rounded text-xs font-mono text-cinema-textMuted">
-          <div>User ID: {currentUserId || 'null'}</div>
-          <div>Is Admin: {String(isUserAdmin || isAdmin)}</div>
-          <div>Total fetched: {comments.length}</div>
-          <div>Pending fetched: {pendingCountFetched}</div>
-          <div>Pending after filter: {pendingCountFiltered}</div>
-          <div>Total after filter: {filteredComments.length}</div>
-        </div>
-      )}
 
       {threadedComments.length === 0 ? (
         <div className="bg-cinema-card rounded-lg p-8 text-center border border-cinema-border">
