@@ -124,6 +124,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
   }, [user?.id, marketId]);
 
   const isBetFormDisabled = isMarketDisabled || hasPlacedBetForMarket;
+  const isCheckingExistingBet = !!user?.id && checkingExistingBet;
 
   // Convert dollars to millions for display
   const dollarsToMillions = (dollars: number) => dollars / 1_000_000;
@@ -348,7 +349,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
         <RangeSlider 
           edges={binEdges}
           availableRanges={availableRanges}
-          disabled={isBetFormDisabled || (user?.id && checkingExistingBet)}
+          disabled={isBetFormDisabled || isCheckingExistingBet}
           onRangeChange={(lowerIndex, upperIndex) => {
             const lowerDollars = binEdges[lowerIndex];
             // Check if upperIndex is at the last position and if the last bucket is open-ended
@@ -391,7 +392,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
           step={1}
           value={points}
           onChange={(e) => setPoints(parseInt(e.target.value || "0", 10))}
-          disabled={isBetFormDisabled || (user?.id && checkingExistingBet) || submitting}
+          disabled={isBetFormDisabled || isCheckingExistingBet || submitting}
           className={`w-28 rounded-md border border-cinema-border bg-cinema-cardHighlight text-cinema-text px-2 py-1 text-sm ${
             isBetFormDisabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
@@ -432,7 +433,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
       <button
         type="button"
         onClick={submit}
-        disabled={isBetFormDisabled || submitting || !selectedRange || (user?.id && checkingExistingBet)}
+        disabled={isBetFormDisabled || submitting || !selectedRange || isCheckingExistingBet}
         className="px-5 py-2 rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Placing…" : "Submit Bet"}
