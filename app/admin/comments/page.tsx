@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import CommentRowClient from './CommentRowClient';
+import { debugLog } from '@/utils/debugLog';
 
 interface Comment {
   id: string;
@@ -30,7 +31,7 @@ export default async function AdminCommentsPage() {
   // Get auth user
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-  console.log('PAGE USER:', authUser?.id);
+  debugLog('PAGE USER:', authUser?.id);
 
   if (authError || !authUser) {
     return (

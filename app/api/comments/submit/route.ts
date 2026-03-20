@@ -5,6 +5,7 @@ import { generateSignedImageUrl } from '@/utils/supabase/storage';
 import { createCommentWithCooldown } from '@/app/api/comments/actions';
 import { createServerSupabase } from '@/utils/supabase/server';
 import sharp from 'sharp';
+import { debugLog } from '@/utils/debugLog';
 
 export async function POST(request: Request) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     const user_id = user.id;
     
     // Parse FormData
-    console.log('[Comment Submit] Received FormData request');
+    debugLog('[Comment Submit] Received FormData request');
     const formData = await request.formData();
     
     // Log all FormData keys for debugging
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     for (const key of formData.keys()) {
       formDataKeys.push(key);
     }
-    console.log('[Comment Submit] FormData keys:', formDataKeys);
+    debugLog('[Comment Submit] FormData keys:', formDataKeys);
     
     // Extract text fields (user_id is no longer from FormData)
     const movie_id = formData.get('movie_id') as string;
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     
     // Extract optional image file
     const imageFileRaw = formData.get('image');
-    console.log('[Comment Submit] Image file extraction:', {
+    debugLog('[Comment Submit] Image file extraction:', {
       hasImageField: !!imageFileRaw,
       imageType: imageFileRaw ? typeof imageFileRaw : 'null',
       isFile: imageFileRaw instanceof File,
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
 
     // Validate image if provided
     if (imageFile) {
-      console.log('[Comment Submit] Image file validation:', {
+      debugLog('[Comment Submit] Image file validation:', {
         fileName: imageFile.name,
         fileSize: imageFile.size,
         fileType: imageFile.type,
@@ -148,9 +149,9 @@ export async function POST(request: Request) {
         );
       }
 
-      console.log('[Comment Submit] Image file validation passed');
+      debugLog('[Comment Submit] Image file validation passed');
     } else {
-      console.log('[Comment Submit] No image file provided');
+      debugLog('[Comment Submit] No image file provided');
     }
 
     // Step 1: Insert comment using server action (enforces 1-minute cooldown)
@@ -220,7 +221,7 @@ export async function POST(request: Request) {
 
     // Step 2: Handle image upload if present
     if (imageFile && imageFile.size > 0) {
-      console.log('[Comment Submit] Starting image upload process', {
+      debugLog('[Comment Submit] Starting image upload process', {
         commentId,
         fileName: imageFile.name,
         fileSize: imageFile.size,
@@ -229,7 +230,7 @@ export async function POST(request: Request) {
 
       try {
         // Verify bucket exists and is accessible
-        console.log('[Comment Submit] Verifying bucket access...');
+        debugLog('[Comment Submit] Verifying bucket access...');
         const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
         
         if (bucketError) {
@@ -263,7 +264,7 @@ export async function POST(request: Request) {
           );
         }
 
-        console.log('[Comment Submit] Bucket verified:', {
+        debugLog('[Comment Submit] Bucket verified:', {
           commentId,
           bucketId: commentImagesBucket.id,
           bucketName: commentImagesBucket.name,
@@ -276,18 +277,18 @@ export async function POST(request: Request) {
                     imageFile.type === 'image/webp' ? 'webp' : 'jpg');
         const storagePath = `${user_id}/${commentId}.${ext}`;
 
-        console.log('[Comment Submit] Prepared storage path:', {
+        debugLog('[Comment Submit] Prepared storage path:', {
           commentId,
           storagePath,
           extension: ext
         });
 
         // Convert File to ArrayBuffer for server-side upload
-        console.log('[Comment Submit] Converting File to ArrayBuffer...');
+        debugLog('[Comment Submit] Converting File to ArrayBuffer...');
         let arrayBuffer: ArrayBuffer;
         try {
           arrayBuffer = await imageFile.arrayBuffer();
-          console.log('[Comment Submit] ArrayBuffer conversion successful:', {
+          debugLog('[Comment Submit] ArrayBuffer conversion successful:', {
             arrayBufferSize: arrayBuffer.byteLength,
             expectedSize: imageFile.size
           });
@@ -301,15 +302,15 @@ export async function POST(request: Request) {
         }
 
         // Convert ArrayBuffer to Buffer
-        console.log('[Comment Submit] Converting ArrayBuffer to Buffer...');
+        debugLog('[Comment Submit] Converting ArrayBuffer to Buffer...');
         const buffer = Buffer.from(arrayBuffer);
-        console.log('[Comment Submit] Buffer creation successful:', {
+        debugLog('[Comment Submit] Buffer creation successful:', {
           bufferLength: buffer.length,
           expectedLength: imageFile.size
         });
 
         // Upload image to Supabase Storage
-        console.log('[Comment Submit] Uploading to Supabase Storage...', {
+        debugLog('[Comment Submit] Uploading to Supabase Storage...', {
           commentId,
           bucket: 'comment-images',
           storagePath,
@@ -359,7 +360,7 @@ export async function POST(request: Request) {
           );
         }
 
-        console.log('[Comment Submit] Image upload successful:', {
+        debugLog('[Comment Submit] Image upload successful:', {
           commentId,
           storagePath,
           uploadDataPath: uploadData.path,
@@ -371,7 +372,7 @@ export async function POST(request: Request) {
         imageSize = imageFile.size;
 
         // Update comment with image metadata
-        console.log('[Comment Submit] Updating comment with image metadata...', {
+        debugLog('[Comment Submit] Updating comment with image metadata...', {
           commentId,
           imagePath,
           imageMime,
@@ -406,7 +407,7 @@ export async function POST(request: Request) {
           );
         }
 
-        console.log('[Comment Submit] Comment updated with image metadata successfully:', {
+        debugLog('[Comment Submit] Comment updated with image metadata successfully:', {
           commentId,
           imagePath,
           imageMime,
@@ -434,7 +435,7 @@ export async function POST(request: Request) {
     // Step 3: Run moderation (text-only or multimodal)
     const hasImage = !!imagePath;
     
-    console.log('[Moderation] Route: Starting moderation', {
+    debugLog('[Moderation] Route: Starting moderation', {
       commentId,
       textPreview,
       hasImage,
@@ -465,7 +466,7 @@ export async function POST(request: Request) {
         commentId
       );
       
-      console.log('[Moderation] Route: Received moderation result', {
+      debugLog('[Moderation] Route: Received moderation result', {
         commentId,
         flagged: moderationResult.flagged,
         moderationMode: signedImageUrl ? 'multimodal' : 'text-only'
@@ -490,7 +491,7 @@ export async function POST(request: Request) {
             action: 'auto-approve failed'
           });
         } else {
-          console.log('[Moderation] Route: Comment auto-approved', {
+          debugLog('[Moderation] Route: Comment auto-approved', {
             commentId,
             action: 'auto-approved',
             previousStatus: 'pending',
@@ -502,7 +503,7 @@ export async function POST(request: Request) {
           commentData.approved_at = new Date().toISOString();
         }
       } else {
-        console.log('[Moderation] Route: Comment flagged, keeping pending', {
+        debugLog('[Moderation] Route: Comment flagged, keeping pending', {
           commentId,
           action: 'keep pending',
           flagged: true,
@@ -521,7 +522,7 @@ export async function POST(request: Request) {
     }
 
     // Step 4: Re-fetch the complete comment record to ensure we return all latest data
-    console.log('[Comment Submit] Re-fetching complete comment record...', { commentId });
+    debugLog('[Comment Submit] Re-fetching complete comment record...', { commentId });
     const { data: finalCommentData, error: finalFetchError } = await supabaseAdmin
       .from('movie_comments')
       .select('*')
@@ -539,7 +540,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ data: commentData }, { status: 201 });
     }
 
-    console.log('[Comment Submit] Comment submission successful:', {
+    debugLog('[Comment Submit] Comment submission successful:', {
       commentId,
       hasImage: !!finalCommentData?.image_path,
       approved: finalCommentData?.approved,

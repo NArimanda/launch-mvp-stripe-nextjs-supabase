@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { debugLog } from '@/utils/debugLog';
 
 export async function GET() {
   const supabase = createRouteHandlerClient({ cookies });
@@ -13,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    console.log("Debug - User ID:", user.id);
+    debugLog("Debug - User ID:", user.id);
 
     // Check if tables exist
     const { data: tables, error: tablesError } = await supabase
@@ -22,7 +23,7 @@ export async function GET() {
       .eq('table_schema', 'public')
       .in('table_name', ['bets', 'markets', 'movies', 'wallets']);
 
-    console.log("Tables check:", { tables, tablesError });
+    debugLog("Tables check:", { tables, tablesError });
 
     // Check user's wallet
     const { data: wallet, error: walletError } = await supabase
@@ -30,7 +31,7 @@ export async function GET() {
       .select('*')
       .eq('user_id', user.id);
 
-    console.log("Wallet check:", { wallet, walletError });
+    debugLog("Wallet check:", { wallet, walletError });
 
     // Check user's bets without joins first
     const { data: userBets, error: betsError } = await supabase
@@ -38,7 +39,7 @@ export async function GET() {
       .select('*')
       .eq('user_id', user.id);
 
-    console.log("User bets check:", { userBets, betsError });
+    debugLog("User bets check:", { userBets, betsError });
 
     // Check if markets table has the expected structure
     const { data: marketsSample, error: marketsError } = await supabase
@@ -46,7 +47,7 @@ export async function GET() {
       .select('*')
       .limit(1);
 
-    console.log("Markets sample:", { marketsSample, marketsError });
+    debugLog("Markets sample:", { marketsSample, marketsError });
 
     // Check if movies table has the expected structure
     const { data: moviesSample, error: moviesError } = await supabase
@@ -54,12 +55,12 @@ export async function GET() {
       .select('*')
       .limit(1);
 
-    console.log("Movies sample:", { moviesSample, moviesError });
+    debugLog("Movies sample:", { moviesSample, moviesError });
 
     // Try the complex join query
     if (userBets && userBets.length > 0) {
       const firstBet = userBets[0];
-      console.log("Trying join with first bet market_id:", firstBet.market_id);
+      debugLog("Trying join with first bet market_id:", firstBet.market_id);
 
       const { data: joinedData, error: joinError } = await supabase
         .from('bets')
@@ -85,7 +86,7 @@ export async function GET() {
         .eq('user_id', user.id)
         .eq('id', firstBet.id);
 
-      console.log("Join test:", { joinedData, joinError });
+      debugLog("Join test:", { joinedData, joinError });
     }
 
     return NextResponse.json({

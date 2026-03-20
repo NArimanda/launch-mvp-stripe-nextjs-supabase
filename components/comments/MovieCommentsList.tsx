@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
 import { approveCommentAction, deleteCommentAction, toggleBanUserAction } from '@/app/api/comments/actions';
+import { debugLog } from '@/utils/debugLog';
 import ExpandableCommentImage from './ExpandableCommentImage';
 
 const MAX_REPLIES_PER_PARENT = 3;
@@ -481,7 +482,7 @@ export default function MovieCommentsList({
         if (process.env.NODE_ENV === 'development') {
           const { data: { user: authUser } } = await supabase.auth.getUser();
           const pendingCount = fetchedComments.filter((c: Comment) => c.approved === false).length;
-          console.log('[MovieCommentsList] Debug (fetched):', {
+          debugLog('[MovieCommentsList] Debug (fetched):', {
             userId: authUser?.id || null,
             pendingCount,
             totalComments: fetchedComments.length,

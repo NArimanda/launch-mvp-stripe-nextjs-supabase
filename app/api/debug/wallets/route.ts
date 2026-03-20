@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { debugLog } from '@/utils/debugLog';
 
 /** Supabase typings can infer `error` as `never` for some schema queries; normalize for JSON. */
 function supabaseErrorMessage(e: unknown): string | undefined {
@@ -20,7 +21,7 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    console.log("Debug - User ID:", user.id);
+    debugLog("Debug - User ID:", user.id);
 
     // Check if wallets table exists
     const { data: tableExists, error: tableError } = await supabase
@@ -29,7 +30,7 @@ export async function GET() {
       .eq('table_schema', 'public')
       .eq('table_name', 'wallets');
 
-    console.log("Table check:", { tableExists, tableError });
+    debugLog("Table check:", { tableExists, tableError });
 
     if (tableError || !tableExists || tableExists.length === 0) {
       return NextResponse.json({ 
@@ -45,14 +46,14 @@ export async function GET() {
       .eq('table_schema', 'public')
       .eq('table_name', 'wallets');
 
-    console.log("Columns:", { columns, columnsError });
+    debugLog("Columns:", { columns, columnsError });
 
     // Try to get all wallets
     const { data: allWallets, error: allWalletsError } = await supabase
       .from('wallets')
       .select('*');
 
-    console.log("All wallets:", { allWallets, allWalletsError });
+    debugLog("All wallets:", { allWallets, allWalletsError });
 
     // Try to get specific user's wallet
     const { data: userWallet, error: userWalletError } = await supabase
@@ -60,7 +61,7 @@ export async function GET() {
       .select('*')
       .eq('user_id', user.id);
 
-    console.log("User wallet:", { userWallet, userWalletError });
+    debugLog("User wallet:", { userWallet, userWalletError });
 
     return NextResponse.json({
       user: { id: user.id, email: user.email },

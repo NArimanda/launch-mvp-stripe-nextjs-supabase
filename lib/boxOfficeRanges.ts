@@ -1,5 +1,6 @@
 // lib/boxOfficeRanges.ts
 // Single source of truth for box office betting ranges
+import { debugLog } from '@/utils/debugLog';
 
 export type MarketType = "OPENING_WEEKEND" | "ONE_MONTH";
 
@@ -300,7 +301,7 @@ if (process.env.NODE_ENV === 'development') {
   if (!validation.valid) {
     console.error('Box office ranges validation failed:', validation.errors);
   } else {
-    console.log('Box office ranges validation passed');
+    debugLog('Box office ranges validation passed');
   }
 }
 

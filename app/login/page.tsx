@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/LoginForm';
 import { supabase } from '@/utils/supabase';
+import { debugLog } from '@/utils/debugLog';
 
 export default function LoginPage() {
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
@@ -17,9 +18,9 @@ export default function LoginPage() {
     // Check client-side user
     supabase.auth.getUser().then(({ data: { user } }) => {
       setClientUserId(user?.id || null);
-      console.log('[LoginPage] Client user ID:', user?.id);
+      debugLog('[LoginPage] Client user ID:', user?.id);
       if (user) {
-        console.log('[LoginPage] User detected, redirecting to dashboard');
+        debugLog('[LoginPage] User detected, redirecting to dashboard');
         router.replace('/dashboard');
       }
     });
@@ -27,7 +28,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      console.log('[LoginPage] AuthContext user detected, redirecting to dashboard');
+      debugLog('[LoginPage] AuthContext user detected, redirecting to dashboard');
       router.replace('/dashboard');
     } else {
       setIsLoading(false);
@@ -51,13 +52,13 @@ export default function LoginPage() {
         
         // Wait a moment for cookies to be set, then redirect
         await new Promise(resolve => setTimeout(resolve, 100));
-        console.log('[LoginPage] Sign up successful, redirecting to dashboard');
+        debugLog('[LoginPage] Sign up successful, redirecting to dashboard');
         router.replace('/dashboard');
       } else {
         await signInWithEmail(email, password);
         // Wait a moment for cookies to be set, then redirect
         await new Promise(resolve => setTimeout(resolve, 100));
-        console.log('[LoginPage] Sign in successful, redirecting to dashboard');
+        debugLog('[LoginPage] Sign in successful, redirecting to dashboard');
         router.replace('/dashboard');
       }
     } catch (error) {

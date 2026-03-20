@@ -1,6 +1,7 @@
 'use server';
 
 import OpenAI from 'openai';
+import { debugLog } from '@/utils/debugLog';
 
 // Initialize OpenAI client (server-side only)
 const openai = new OpenAI({
@@ -36,7 +37,7 @@ export async function moderateComment(
     const hasImage = !!imageUrl;
     
     // Log entry point
-    console.log('[Moderation] Starting moderation', {
+    debugLog('[Moderation] Starting moderation', {
       commentId: commentId || null,
       textPreview,
       textLength: text.length,
@@ -60,7 +61,7 @@ export async function moderateComment(
       try {
         const urlObj = new URL(imageUrl);
         const maskedUrl = `${urlObj.protocol}//${urlObj.host}/...`;
-        console.log('[Moderation] API Request', {
+        debugLog('[Moderation] API Request', {
           commentId: commentId || null,
           model,
           inputTypes: ['text', 'image_url'],
@@ -68,7 +69,7 @@ export async function moderateComment(
           imageUrl: maskedUrl
         });
       } catch {
-        console.log('[Moderation] API Request', {
+        debugLog('[Moderation] API Request', {
           commentId: commentId || null,
           model,
           inputTypes: ['text', 'image_url'],
@@ -77,7 +78,7 @@ export async function moderateComment(
         });
       }
     } else {
-      console.log('[Moderation] API Request', {
+      debugLog('[Moderation] API Request', {
         commentId: commentId || null,
         model,
         inputTypes: ['text'],
@@ -98,7 +99,7 @@ export async function moderateComment(
     const flagged = response.results.some(result => result.flagged === true);
 
     // Log full API response
-    console.log('[Moderation] API Response', {
+    debugLog('[Moderation] API Response', {
       commentId: commentId || null,
       id: response.id,
       model: response.model,
@@ -112,7 +113,7 @@ export async function moderateComment(
     });
 
     // Log final decision with clear flagged status
-    console.log('[Moderation] Final Decision', {
+    debugLog('[Moderation] Final Decision', {
       commentId: commentId || null,
       flagged,
       durationMs: duration,
