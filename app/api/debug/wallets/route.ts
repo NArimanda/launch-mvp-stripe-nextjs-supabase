@@ -2,6 +2,13 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+/** Supabase typings can infer `error` as `never` for some schema queries; normalize for JSON. */
+function supabaseErrorMessage(e: unknown): string | undefined {
+  if (e == null || typeof e !== "object") return undefined;
+  const msg = (e as { message?: unknown }).message;
+  return typeof msg === "string" ? msg : undefined;
+}
+
 export async function GET() {
   const supabase = createRouteHandlerClient({ cookies });
 
@@ -27,7 +34,7 @@ export async function GET() {
     if (tableError || !tableExists || tableExists.length === 0) {
       return NextResponse.json({ 
         error: "Wallets table does not exist",
-        tableError: tableError?.message
+        tableError: supabaseErrorMessage(tableError),
       });
     }
 
@@ -62,11 +69,11 @@ export async function GET() {
       allWallets,
       userWallet,
       errors: {
-        tableError: tableError?.message,
-        columnsError: columnsError?.message,
-        allWalletsError: allWalletsError?.message,
-        userWalletError: userWalletError?.message
-      }
+        tableError: supabaseErrorMessage(tableError),
+        columnsError: supabaseErrorMessage(columnsError),
+        allWalletsError: supabaseErrorMessage(allWalletsError),
+        userWalletError: supabaseErrorMessage(userWalletError),
+      },
     });
 
   } catch (error) {

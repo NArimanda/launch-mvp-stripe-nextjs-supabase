@@ -41,14 +41,18 @@ export default async function Home() {
     .order("end_time", { ascending: false })
     .limit(10);
 
-  // Extract unique movies from the results
-  // Handle both potential response structures: { movies: {...} } or { movies: {...} } (nested)
-  const archiveMovies = recentArchiveMarkets
-    ?.map((m: { movies: { id: string; slug: string; title: string; image_url: string | null; release_date: string | null } }) => m.movies)
-    .filter((movie) => movie !== null && movie !== undefined)
-    .filter((movie, index, self) => 
-      index === self.findIndex((m) => m.id === movie.id)
-    ) || [];
+  // Extract unique movies (Supabase may type `movies` as an array for this join)
+  const archiveMovies =
+    recentArchiveMarkets
+      ?.flatMap((m) => {
+        const nested = m.movies;
+        if (nested == null) return [];
+        return Array.isArray(nested) ? nested : [nested];
+      })
+      .filter((movie): movie is NonNullable<typeof movie> => movie != null)
+      .filter(
+        (movie, index, self) => index === self.findIndex((x) => x.id === movie.id),
+      ) ?? [];
 
   return (
     <main className="min-h-screen bg-cinema-page px-4 py-6 max-w-7xl mx-auto">

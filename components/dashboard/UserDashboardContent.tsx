@@ -444,7 +444,7 @@ export default function UserDashboardContent({
                   </div>
                 </div>
                 {/* Restore Balance Button - only on own dashboard when eligible */}
-                {isOwnDashboard && balance !== null && balance < 250 && (
+                {isOwnDashboard && balance != null && balance < 250 && (
                   <RestoreBalanceForm />
                 )}
               </div>

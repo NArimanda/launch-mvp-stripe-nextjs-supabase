@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useActionState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useRouter } from 'next/navigation';
 import MovieCommentsList from './MovieCommentsList';
-import { X, Send, AlertCircle, Image, XCircle } from 'lucide-react';
+import { X, Send, AlertCircle, Image as ImageIcon, XCircle } from 'lucide-react';
 import { setUsernameAction } from '@/app/actions/usernameActions';
 
 interface PendingComment {
@@ -474,7 +474,7 @@ export default function MovieComments({ movieId }: MovieCommentsProps) {
                       htmlFor="comment-image-input"
                       className="inline-flex items-center gap-2 px-3 py-2 text-sm text-cinema-textMuted border border-cinema-border rounded-lg cursor-pointer hover:bg-cinema-cardHighlight transition-colors"
                     >
-                      <Image className="h-4 w-4" />
+                      <ImageIcon className="h-4 w-4" />
                       <span>Add Image (optional)</span>
                     </label>
                     <input

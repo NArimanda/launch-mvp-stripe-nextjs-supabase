@@ -2,6 +2,7 @@
 import * as React from "react";
 import { supabase } from "@/utils/supabase";
 import { getRanges, type MarketType, type RangeBucket } from "@/lib/boxOfficeRanges";
+import type { Timeframe } from "@/lib/binPresets";
 
 type Bet = {
   points: number;
@@ -10,7 +11,7 @@ type Bet = {
 
 interface MarketHeatmapProps {
   marketId: string;
-  timeframe: "weekend" | "month";
+  timeframe: Timeframe;
 }
 
 interface HeatmapRow {

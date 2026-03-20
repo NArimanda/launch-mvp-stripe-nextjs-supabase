@@ -47,10 +47,11 @@ export default function AdminCommentsClient({
   const handleApprove = async (commentId: string) => {
     setActionLoading(commentId);
     startTransition(async () => {
-      const result = await approveComment(commentId);
-      alert(JSON.stringify(result));
-      if (result.error) {
-        alert(`Failed to approve comment: ${result.error}`);
+      const formData = new FormData();
+      formData.set('commentId', commentId);
+      const error = await approveComment(null, formData);
+      if (error) {
+        alert(`Failed to approve comment: ${error}`);
       }
       setActionLoading(null);
       router.refresh();
@@ -64,9 +65,11 @@ export default function AdminCommentsClient({
 
     setActionLoading(commentId);
     startTransition(async () => {
-      const result = await deleteComment(commentId);
-      if (result.error) {
-        alert(`Failed to delete comment: ${result.error}`);
+      const formData = new FormData();
+      formData.set('commentId', commentId);
+      const error = await deleteComment(null, formData);
+      if (error) {
+        alert(`Failed to delete comment: ${error}`);
       }
       setActionLoading(null);
       router.refresh();
