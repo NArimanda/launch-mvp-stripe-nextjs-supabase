@@ -4,6 +4,7 @@ import * as React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRanges, type MarketType, type RangeBucket } from "@/lib/boxOfficeRanges";
 import { computeMultiplier, MAX_MULT } from "@/lib/multiplier";
+import { supabase } from "@/utils/supabase";
 
 type Bin = {
   bin_id: string;
@@ -26,6 +27,8 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
   const isMarketResolved = marketStatus === 'resolved';
   const isMarketDisabled = isMarketClosed || isMarketResolved;
   const { user, session } = useAuth();
+  const [hasPlacedBetForMarket, setHasPlacedBetForMarket] = React.useState(false);
+  const [checkingExistingBet, setCheckingExistingBet] = React.useState(false);
   
   // Map timeframe to MarketType
   const marketType: MarketType = React.useMemo(() => {
@@ -77,6 +80,50 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // UI-only restriction: prevent placing multiple bets per market.
+    // If the user isn't signed in yet, we keep the existing flow.
+    if (!user?.id || !marketId) {
+      setHasPlacedBetForMarket(false);
+      setCheckingExistingBet(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const checkExistingBet = async () => {
+      setCheckingExistingBet(true);
+      try {
+        const { data, error } = await supabase
+          .from("bets")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("market_id", marketId)
+          .limit(1);
+
+        if (!isMounted) return;
+        if (error) {
+          // If the check fails, don't block the UI.
+          setHasPlacedBetForMarket(false);
+          return;
+        }
+
+        setHasPlacedBetForMarket(Array.isArray(data) && data.length > 0);
+      } catch {
+        if (isMounted) setHasPlacedBetForMarket(false);
+      } finally {
+        if (isMounted) setCheckingExistingBet(false);
+      }
+    };
+
+    checkExistingBet();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, marketId]);
+
+  const isBetFormDisabled = isMarketDisabled || hasPlacedBetForMarket;
 
   // Convert dollars to millions for display
   const dollarsToMillions = (dollars: number) => dollars / 1_000_000;
@@ -144,7 +191,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
     setError(null);
     setOk(null);
 
-    if (isMarketDisabled) {
+    if (isBetFormDisabled) {
       setError(isMarketClosed 
         ? "This market is closed and no longer accepting bets." 
         : "This market has been resolved and no longer accepting bets.");
@@ -260,7 +307,11 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
   };
 
   return (
-    <div className="rounded-lg border border-cinema-border p-4 bg-cinema-card shadow-cinema-card">
+    <div
+      className={`rounded-lg border border-cinema-border p-4 bg-cinema-card shadow-cinema-card ${
+        hasPlacedBetForMarket ? "opacity-60 cursor-not-allowed" : ""
+      }`}
+    >
       <div className="mb-4 p-2 bg-cinema-cardHighlight border border-cinema-border rounded text-xs text-cinema-textMuted">
         Debug: User ID: {user?.id || 'Not authenticated'} | 
         User object: {user ? 'Present' : 'Missing'}
@@ -283,12 +334,21 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
         </div>
       )}
 
+      {hasPlacedBetForMarket && !isMarketDisabled && (
+        <div className="mb-4 p-3 rounded-lg border bg-slate-900/20 border-cinema-border text-cinema-textMuted">
+          <div className="font-medium mb-1">Bet already placed</div>
+          <div className="text-sm">
+            You can only place one bet per market.
+          </div>
+        </div>
+      )}
+
       <div className="mb-4">
         <div className="text-sm text-cinema-textMuted mb-2">Select a range:</div>
         <RangeSlider 
           edges={binEdges}
           availableRanges={availableRanges}
-          disabled={isMarketDisabled}
+          disabled={isBetFormDisabled || (user?.id && checkingExistingBet)}
           onRangeChange={(lowerIndex, upperIndex) => {
             const lowerDollars = binEdges[lowerIndex];
             // Check if upperIndex is at the last position and if the last bucket is open-ended
@@ -331,9 +391,9 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
           step={1}
           value={points}
           onChange={(e) => setPoints(parseInt(e.target.value || "0", 10))}
-          disabled={isMarketDisabled || submitting}
+          disabled={isBetFormDisabled || (user?.id && checkingExistingBet) || submitting}
           className={`w-28 rounded-md border border-cinema-border bg-cinema-cardHighlight text-cinema-text px-2 py-1 text-sm ${
-            isMarketDisabled ? 'opacity-50 cursor-not-allowed' : ''
+            isBetFormDisabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
       </div>
@@ -372,7 +432,7 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
       <button
         type="button"
         onClick={submit}
-        disabled={isMarketDisabled || submitting || !selectedRange}
+        disabled={isBetFormDisabled || submitting || !selectedRange || (user?.id && checkingExistingBet)}
         className="px-5 py-2 rounded-md bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Placing…" : "Submit Bet"}
