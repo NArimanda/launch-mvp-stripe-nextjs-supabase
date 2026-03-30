@@ -4,17 +4,18 @@ import Link from 'next/link';
 
 export default function InstructionsSection() {
   return (
-    <div className="mb-6">
-      <div className="bg-cinema-sectionPanel rounded-xl px-6 py-4 border border-[rgba(239,68,68,0.12)]">
-        <h2 className="text-[20px] font-semibold leading-[1.3] text-cinema-text mb-1.5">
-          Select an upcoming movie to place a prediction
-        </h2>
-        <p className="text-base text-cinema-textMuted">
+    <div className="mb-8">
+      <div className="bg-cinema-sectionPanel/80 rounded-xl px-8 py-12 border border-[rgba(255,255,255,0.08)]">
+        <h1 className="text-[36px] sm:text-[44px] lg:text-[48px] font-bold leading-[1.2] text-[#f5f5f5] max-w-[800px]">
+          Pick a movie.{' '}
+          <span className="text-cinema-accent">Make a call.</span>
+        </h1>
+        <p className="mt-3 text-sm sm:text-base text-cinema-textMuted/70">
           <Link
-            href="https://substack.com/@boxofficebandits?"
+            href="https://substack.com/@boxofficecalls"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-cinema-accent hover:text-cinema-accentWarm font-medium underline underline-offset-2 transition-colors"
+            className="hover:text-cinema-accent font-medium underline underline-offset-2 transition-colors"
           >
             Get reminders before every box office weekend
           </Link>
