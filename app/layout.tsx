@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import TopBar from '../components/TopBar';
 import ProtectedRoute from '@/contexts/ProtectedRoute';
+import Footer from '../components/Footer';
 import { Analytics } from "@vercel/analytics/react";
 import { metadata } from "./metadata";
 
@@ -24,6 +25,7 @@ export default function RootLayout({
             <ProtectedRoute>
               <TopBar />    
               <main>{children}</main>
+              <Footer />
             </ProtectedRoute>
         </AuthProvider>
       </body>
