@@ -37,11 +37,10 @@ export default function ContactPage() {
         <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-black mb-2">Google Form</h2>
           <p className="text-neutral-700 mb-4">
-            Submit feedback or questions through our Google Form (opens in a new tab). Update{' '}
+            Submit feedback or questions through our Google Form (opens in a new tab)
             <code className="text-sm bg-neutral-100 px-1.5 py-0.5 rounded text-neutral-800">
-              GOOGLE_FORM_URL
+              
             </code>{' '}
-            at the top of this file with your form&apos;s share link.
           </p>
           <a
             href={GOOGLE_FORM_URL}
