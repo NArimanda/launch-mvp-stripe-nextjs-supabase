@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useActionState } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useActionState } from 'react';
 import { motion } from 'framer-motion';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
@@ -35,6 +35,107 @@ interface UserBet {
     image_url: string;
   };
 }
+
+function formatPointsValue(n: number, fractionDigits: 0 | 2 = 0): string {
+  return `${n.toLocaleString(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })} points`;
+}
+
+/** Display stored range (e.g. "10-30", "[10 - 30]", "400+") as "$10 million – $30 million". Values are box office millions. */
+function formatBetRangeDisplay(selectedRange: string): string {
+  const cleaned = selectedRange.replace(/[\[\]]/g, '').trim();
+  if (!cleaned) return selectedRange;
+
+  const millionPart = (n: number) => {
+    if (!Number.isFinite(n)) return null;
+    const s = Number.isInteger(n)
+      ? n.toLocaleString()
+      : n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return `$${s} million`;
+  };
+
+  if (cleaned.endsWith('+')) {
+    const raw = cleaned.slice(0, -1).trim();
+    const n = parseFloat(raw);
+    const part = millionPart(n);
+    return part ? `${part}+` : selectedRange;
+  }
+
+  const parts = cleaned.split(/\s*[-–]\s*/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 2) {
+    const a = parseFloat(parts[0]);
+    const b = parseFloat(parts[1]);
+    const left = millionPart(a);
+    const right = millionPart(b);
+    if (left && right) return `${left} – ${right}`;
+    return selectedRange;
+  }
+
+  const single = parseFloat(cleaned);
+  const one = millionPart(single);
+  return one ?? selectedRange;
+}
+
+/** Compact range for share cards, e.g. $0–$20M or $150M+ */
+function formatBetRangeCompact(selectedRange: string): string {
+  const cleaned = selectedRange.replace(/[\[\]]/g, '').trim();
+  if (!cleaned) return selectedRange;
+  const fmt = (n: number) =>
+    Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '');
+  if (cleaned.endsWith('+')) {
+    const n = parseFloat(cleaned.slice(0, -1).trim());
+    if (!Number.isFinite(n)) return formatBetRangeDisplay(selectedRange);
+    return `$${fmt(n)}M+`;
+  }
+  const parts = cleaned.split(/\s*[-–]\s*/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 2) {
+    const a = parseFloat(parts[0]);
+    const b = parseFloat(parts[1]);
+    if (Number.isFinite(a) && Number.isFinite(b)) return `$${fmt(a)}–$${fmt(b)}M`;
+  }
+  const single = parseFloat(cleaned);
+  if (Number.isFinite(single)) return `$${fmt(single)}M`;
+  return formatBetRangeDisplay(selectedRange);
+}
+
+function slugToDisplayTitle(slug: string): string {
+  if (!slug?.trim()) return 'Unknown title';
+  return slug
+    .split(/[-_]+/g)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function betCardTimeframeHeadline(timeframe: string): string {
+  const t = timeframe.toLowerCase();
+  if (t === 'weekend') return 'Opening Weekend';
+  if (t === 'month') return 'Opening Month';
+  return timeframe.charAt(0).toUpperCase() + timeframe.slice(1);
+}
+
+function betCardMarketScopeLabel(marketType: string): string {
+  const t = marketType.toLowerCase();
+  if (t === 'worldwide') return 'Worldwide';
+  if (t === 'domestic') return 'Domestic';
+  return marketType.charAt(0).toUpperCase() + marketType.slice(1);
+}
+
+function formatShareCardDate(value: string | undefined): string {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+const BET_SHARE_CARD_BG = 'linear-gradient(165deg, #2a1518 0%, #180d10 42%, #0e080a 100%)';
+const BET_SHARE_CARD_CANVAS_BG = '#14090c';
 
 interface UserDashboardContentProps {
   username: string;
@@ -99,6 +200,97 @@ function RestoreBalanceForm() {
   );
 }
 
+/** Stats card PNG export: fixed square and safe padding (inner content lives in the inset area). */
+const STATS_CARD_EXPORT_PX = 1080;
+const STATS_CARD_SAFE_PADDING_PX = 80;
+const STATS_CARD_INNER_PX = STATS_CARD_EXPORT_PX - 2 * STATS_CARD_SAFE_PADDING_PX;
+
+/**
+ * Clone the card into an off-screen host with no CSS transform ancestors, then rasterize.
+ * Avoids html2canvas overlapping/garbled text when the live preview sits under scale(...).
+ */
+async function rasterizeShareCardToPng(
+  sourceElement: HTMLElement,
+  options: { backgroundColor: string; fileName: string }
+): Promise<void> {
+  const { backgroundColor, fileName } = options;
+  const exportSize = STATS_CARD_EXPORT_PX;
+  const clone = sourceElement.cloneNode(true) as HTMLElement;
+  const host = document.createElement('div');
+  host.setAttribute('aria-hidden', 'true');
+  host.style.cssText = [
+    'position:fixed',
+    'left:-10000px',
+    'top:0',
+    `width:${exportSize}px`,
+    `height:${exportSize}px`,
+    'overflow:hidden',
+    'visibility:visible',
+    'pointer-events:none',
+    'margin:0',
+    'padding:0',
+    'border:none',
+    'z-index:0',
+  ].join(';');
+
+  document.body.appendChild(host);
+  host.appendChild(clone);
+
+  let canvas: HTMLCanvasElement;
+  try {
+    if (typeof document.fonts?.ready?.then === 'function') {
+      await document.fonts.ready;
+    }
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    });
+
+    canvas = await html2canvas(clone, {
+      backgroundColor,
+      scale: 1,
+      width: exportSize,
+      height: exportSize,
+      useCORS: true,
+    });
+  } finally {
+    document.body.removeChild(host);
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('PNG toBlob returned null'));
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        resolve();
+      },
+      'image/png',
+      1
+    );
+  });
+}
+
+function statsCardHeroFontSizePx(valueDisplay: string): number {
+  const len = valueDisplay.length;
+  if (len > 24) return 48;
+  if (len > 20) return 56;
+  if (len > 16) return 72;
+  if (len > 13) return 88;
+  if (len > 11) return 96;
+  return 112;
+}
+
 interface StatsCardModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -121,38 +313,63 @@ function StatsCardModal({
   pendingPredictions
 }: StatsCardModalProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const accuracyPercent = predictionAccuracy != null ? (predictionAccuracy * 100).toFixed(1) : '--';
+  const previewViewportRef = useRef<HTMLDivElement | null>(null);
+  const [previewScale, setPreviewScale] = useState(0.45);
 
-  if (!isOpen) return null;
+  const accuracyPercent = predictionAccuracy != null ? (predictionAccuracy * 100).toFixed(1) : '--';
+  const totalValueDisplay = `${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} points`;
+  const heroFontPx = statsCardHeroFontSizePx(totalValueDisplay);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const el = previewViewportRef.current;
+    if (!el) return;
+
+    const updateScale = () => {
+      const rect = el.getBoundingClientRect();
+      const margin = 8;
+      const w = Math.max(0, rect.width - margin);
+      const h = Math.max(0, rect.height - margin);
+      const s = Math.min(w / STATS_CARD_EXPORT_PX, h / STATS_CARD_EXPORT_PX, 1);
+      setPreviewScale(Number.isFinite(s) && s > 0 ? Math.max(0.1, s) : 0.1);
+    };
+
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(el);
+    window.addEventListener('resize', updateScale);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
+  }, [isOpen]);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
+      await rasterizeShareCardToPng(cardRef.current, {
         backgroundColor: '#0B0B0E',
-      });
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'stats-card.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        fileName: 'stats-card.png',
       });
     } catch (err) {
       console.error('Failed to generate stats card image:', err);
     }
   };
 
+  if (!isOpen) return null;
+
+  const cardBoxStyle = {
+    width: STATS_CARD_EXPORT_PX,
+    height: STATS_CARD_EXPORT_PX,
+    boxSizing: 'border-box' as const,
+    padding: STATS_CARD_SAFE_PADDING_PX,
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-cinema-card border border-cinema-border text-cinema-text rounded-xl shadow-cinema-card w-full max-w-md mx-4">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-cinema-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-1 sm:p-2">
+      <div className="bg-cinema-card border border-cinema-border text-cinema-text rounded-lg sm:rounded-xl shadow-cinema-card flex flex-col min-h-0 w-[calc(100vw-8px)] h-[calc(100dvh-8px)] max-w-[calc(100vw-8px)] max-h-[calc(100dvh-8px)] sm:w-[calc(100vw-16px)] sm:h-[calc(100dvh-16px)] sm:max-w-[calc(100vw-16px)] sm:max-h-[calc(100dvh-16px)]">
+        <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b border-cinema-border shrink-0">
           <h3 className="text-sm font-semibold tracking-wide uppercase text-cinema-textMuted">
             Stats Card Preview
           </h3>
@@ -164,55 +381,102 @@ function StatsCardModal({
           </button>
         </div>
 
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-2 py-2 sm:px-3 sm:py-3 flex flex-col min-h-0 flex-1 overflow-hidden gap-2 sm:gap-3">
           <div
-            ref={cardRef}
-            className="bg-cinema-cardHighlight rounded-lg px-6 py-5 shadow-inner border border-cinema-border"
+            ref={previewViewportRef}
+            className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-md sm:rounded-lg border border-cinema-border/60 bg-cinema-page/30"
           >
-            <h4 className="text-base font-semibold mb-4 tracking-wide text-cinema-text">
-              Box Office Bandits – Stats
-            </h4>
+            <div
+              className="shrink-0"
+              style={{
+                width: STATS_CARD_EXPORT_PX * previewScale,
+                height: STATS_CARD_EXPORT_PX * previewScale,
+                position: 'relative',
+              }}
+            >
+              <div
+                className="shrink-0"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: STATS_CARD_EXPORT_PX,
+                  height: STATS_CARD_EXPORT_PX,
+                  transform: `scale(${previewScale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <div
+                  ref={cardRef}
+                  style={cardBoxStyle}
+                  className="bg-cinema-cardHighlight shadow-inner border border-cinema-border flex flex-col justify-between overflow-hidden min-w-0"
+                >
+                  <div
+                    className="min-h-0 shrink-0 min-w-0 max-w-full"
+                    style={{ maxWidth: STATS_CARD_INNER_PX }}
+                  >
+                    <p
+                      className="font-semibold tracking-tight text-cinema-text leading-tight break-words [overflow-wrap:anywhere] max-w-full"
+                      style={{ fontSize: 36, lineHeight: 1.15 }}
+                    >
+                      {username}
+                    </p>
+                    <p
+                      className="mt-4 font-bold text-emerald-400 leading-tight tabular-nums break-words [overflow-wrap:anywhere] max-w-full"
+                      style={{ fontSize: heroFontPx, lineHeight: 1.05 }}
+                    >
+                      {totalValueDisplay}
+                    </p>
+                  </div>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Username</span>
-                <span className="font-medium text-cinema-text">{username}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Available Points</span>
-                <span className="font-medium text-cinema-text">
-                  {availablePoints.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Total Value</span>
-                <span className="font-medium text-emerald-400">
-                  ${totalValue.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Prediction Accuracy</span>
-                <span className="font-medium text-cinema-text">
-                  {accuracyPercent}
-                  {accuracyPercent !== '--' ? '%' : ''}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Total Predictions</span>
-                <span className="font-medium text-cinema-text">
-                  {totalPredictions.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Pending Predictions</span>
-                <span className="font-medium text-cinema-text">
-                  {pendingPredictions.toLocaleString()}
-                </span>
+                  <div
+                    className="flex-1 flex flex-col justify-center py-6 min-h-0 min-w-0 overflow-hidden"
+                    style={{ maxWidth: STATS_CARD_INNER_PX }}
+                  >
+                    <div className="space-y-4 text-[26px] min-w-0 w-full">
+                      <div className="flex items-baseline justify-between gap-4 min-w-0">
+                        <span className="text-cinema-textMuted shrink-0">Accuracy</span>
+                        <span className="font-medium text-cinema-text text-right min-w-0 break-words">
+                          {accuracyPercent}
+                          {accuracyPercent !== '--' ? '%' : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-4 min-w-0">
+                        <span className="text-cinema-textMuted shrink-0">Predictions</span>
+                        <span className="font-medium text-cinema-text tabular-nums shrink-0">
+                          {totalPredictions.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-4 min-w-0">
+                        <span className="text-cinema-textMuted shrink-0">Pending</span>
+                        <span className="font-medium text-cinema-text tabular-nums shrink-0">
+                          {pendingPredictions.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-4 min-w-0">
+                        <span className="text-cinema-textMuted shrink-0">Balance</span>
+                        <span className="font-medium text-cinema-text tabular-nums shrink-0">
+                          {availablePoints.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className="shrink-0 pt-4 border-t border-cinema-border/60 text-center space-y-2 min-w-0 px-1 w-full"
+                    style={{ maxWidth: STATS_CARD_INNER_PX }}
+                  >
+                    <p className="text-[24px] font-semibold text-cinema-text break-words">boxofficecalls.com</p>
+                    <p className="text-[20px] text-cinema-textMuted leading-snug break-words [hyphens:auto]">
+                      Track your calls. Prove your edge.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-1">
+          <div className="flex items-center justify-end gap-3 pt-1 shrink-0">
             <button
               onClick={handleDownload}
               className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary hover:bg-primary-dark text-white transition-colors"
@@ -229,6 +493,7 @@ function StatsCardModal({
 interface BetCardModalProps {
   isOpen: boolean;
   onClose: () => void;
+  username: string;
   bet: UserBet;
   isHistory: boolean;
 }
@@ -236,51 +501,73 @@ interface BetCardModalProps {
 function BetCardModal({
   isOpen,
   onClose,
+  username,
   bet,
   isHistory,
 }: BetCardModalProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const previewViewportRef = useRef<HTMLDivElement | null>(null);
+  const [previewScale, setPreviewScale] = useState(0.45);
 
-  if (!isOpen) return null;
+  const sharePlacedDate = formatShareCardDate(bet.placed_at);
+  const shareReleaseDate = formatShareCardDate(bet.movie.release_date);
+  const compactRange = formatBetRangeCompact(bet.selected_range);
+  const movieTitle = slugToDisplayTitle(bet.movie.slug);
+  const timeframeHeadline = betCardTimeframeHeadline(bet.market.timeframe);
+  const marketScope = betCardMarketScopeLabel(bet.market.type);
+  const atUsername = username.startsWith('@') ? username : `@${username}`;
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const el = previewViewportRef.current;
+    if (!el) return;
+
+    const updateScale = () => {
+      const rect = el.getBoundingClientRect();
+      const margin = 8;
+      const w = Math.max(0, rect.width - margin);
+      const h = Math.max(0, rect.height - margin);
+      const s = Math.min(w / STATS_CARD_EXPORT_PX, h / STATS_CARD_EXPORT_PX, 1);
+      setPreviewScale(Number.isFinite(s) && s > 0 ? Math.max(0.1, s) : 0.1);
+    };
+
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(el);
+    window.addEventListener('resize', updateScale);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
+  }, [isOpen, bet.id]);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
 
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#0B0B0E',
-      });
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'bet-card.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      await rasterizeShareCardToPng(cardRef.current, {
+        backgroundColor: BET_SHARE_CARD_CANVAS_BG,
+        fileName: 'bet-card.png',
       });
     } catch (err) {
       console.error('Failed to generate bet card image:', err);
     }
   };
 
-  const formattedPlacedAt = bet.placed_at
-    ? new Date(bet.placed_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : 'N/A';
+  if (!isOpen) return null;
+
+  const cardBoxStyle = {
+    width: STATS_CARD_EXPORT_PX,
+    height: STATS_CARD_EXPORT_PX,
+    boxSizing: 'border-box' as const,
+    padding: STATS_CARD_SAFE_PADDING_PX,
+    background: BET_SHARE_CARD_BG,
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-cinema-card border border-cinema-border text-cinema-text rounded-xl shadow-cinema-card w-full max-w-md mx-4">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-cinema-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-1 sm:p-2">
+      <div className="bg-cinema-card border border-cinema-border text-cinema-text rounded-lg sm:rounded-xl shadow-cinema-card flex flex-col min-h-0 w-[calc(100vw-8px)] h-[calc(100dvh-8px)] max-w-[calc(100vw-8px)] max-h-[calc(100dvh-8px)] sm:w-[calc(100vw-16px)] sm:h-[calc(100dvh-16px)] sm:max-w-[calc(100vw-16px)] sm:max-h-[calc(100dvh-16px)]">
+        <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b border-cinema-border shrink-0">
           <h3 className="text-sm font-semibold tracking-wide uppercase text-cinema-textMuted">
             {isHistory ? 'Bet Card – Settled' : 'Bet Card – Pending'}
           </h3>
@@ -292,68 +579,151 @@ function BetCardModal({
           </button>
         </div>
 
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-2 py-2 sm:px-3 sm:py-3 flex flex-col min-h-0 flex-1 overflow-hidden gap-2 sm:gap-3">
           <div
-            ref={cardRef}
-            className="bg-cinema-cardHighlight rounded-lg px-6 py-5 shadow-inner border border-cinema-border"
+            ref={previewViewportRef}
+            className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-md sm:rounded-lg border border-cinema-border/60 bg-cinema-page/30"
           >
-            <h4 className="text-base font-semibold mb-4 tracking-wide text-cinema-text">
-              Box Office Bandits – Bet
-            </h4>
+            <div
+              className="shrink-0"
+              style={{
+                width: STATS_CARD_EXPORT_PX * previewScale,
+                height: STATS_CARD_EXPORT_PX * previewScale,
+                position: 'relative',
+              }}
+            >
+              <div
+                className="shrink-0"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: STATS_CARD_EXPORT_PX,
+                  height: STATS_CARD_EXPORT_PX,
+                  transform: `scale(${previewScale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <div
+                  ref={cardRef}
+                  style={cardBoxStyle}
+                  className="shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] border border-[#3d1f26]/80 flex flex-col overflow-hidden min-w-0 text-[#f4e8ea]"
+                >
+                  <div
+                    className="flex flex-col flex-1 min-h-0 min-w-0 w-full"
+                    style={{ maxWidth: STATS_CARD_INNER_PX }}
+                  >
+                    {/* Identity */}
+                    <p
+                      className="shrink-0 tracking-tight text-white/55 break-words [overflow-wrap:anywhere]"
+                      style={{ fontSize: 26, lineHeight: 1.2 }}
+                    >
+                      {atUsername}
+                    </p>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Movie Title</span>
-                <span className="font-medium text-cinema-text">{bet.movie.slug}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Release Date</span>
-                <span className="font-medium text-cinema-text">{bet.movie.release_date}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Market Type</span>
-                <span className="font-medium text-cinema-text">{bet.market.type}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Timeframe</span>
-                <span className="font-medium text-cinema-text">{bet.market.timeframe}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Selected Range</span>
-                <span className="font-medium text-cinema-text">{bet.selected_range}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Points Wagered</span>
-                <span className="font-medium text-cinema-text">
-                  {bet.points.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Potential Payout</span>
-                <span className="font-medium text-emerald-400">
-                  {bet.potential_payout.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Bet Status</span>
-                <span className="font-medium text-cinema-text">{bet.status}</span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Outcome</span>
-                <span className="font-medium text-cinema-text">
-                  {bet.outcome || 'Pending'}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <span className="text-cinema-textMuted">Placed At</span>
-                <span className="font-medium text-cinema-text">
-                  {formattedPlacedAt}
-                </span>
+                    {/* Poster */}
+                    <div
+                      className="mt-3 shrink-0 w-full overflow-hidden rounded-2xl border border-white/12 bg-black/40 flex items-center justify-center"
+                      style={{ height: 252 }}
+                    >
+                      {bet.movie.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- html2canvas-friendly poster for export
+                        <img
+                          src={bet.movie.image_url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          draggable={false}
+                        />
+                      ) : (
+                        <span className="text-[20px] tracking-[0.2em] uppercase text-white/35">
+                          No Poster
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Main story */}
+                    <div className="mt-4 shrink-0 min-w-0 space-y-1">
+                      <h2
+                        className="font-bold tracking-tight text-white break-words [overflow-wrap:anywhere]"
+                        style={{ fontSize: 46, lineHeight: 1.12 }}
+                      >
+                        {movieTitle}
+                      </h2>
+                      <p
+                        className="font-medium text-white/65 tracking-wide"
+                        style={{ fontSize: 26, lineHeight: 1.25 }}
+                      >
+                        {timeframeHeadline}
+                      </p>
+                      <p
+                        className="font-bold tracking-tight text-white break-words [overflow-wrap:anywhere] tabular-nums pt-1"
+                        style={{ fontSize: 46, lineHeight: 1.12 }}
+                      >
+                        {compactRange}
+                      </p>
+                      <p className="text-[18px] text-white/45 pt-0.5">
+                        Market: {marketScope}
+                      </p>
+                    </div>
+
+                    <div className="my-4 shrink-0 h-px w-full bg-white/12" aria-hidden />
+
+                    {/* Bet details */}
+                    <div className="shrink-0 space-y-2.5 min-w-0" style={{ fontSize: 26, lineHeight: 1.35 }}>
+                      <p className="text-white/90">
+                        Bet:{' '}
+                        <span className="font-semibold tabular-nums text-white">
+                          {bet.points.toLocaleString()} pts
+                        </span>
+                      </p>
+                      <p className="text-white/90">
+                        Potential:{' '}
+                        <span className="font-semibold tabular-nums text-emerald-400">
+                          {bet.potential_payout.toLocaleString()} pts
+                        </span>
+                      </p>
+                      <p className="text-white/90">
+                        Status:{' '}
+                        <span className="font-semibold text-white">{bet.status}</span>
+                      </p>
+                    </div>
+
+                    <div className="my-4 shrink-0 h-px w-full bg-white/12" aria-hidden />
+
+                    {/* Metadata */}
+                    <div
+                      className="shrink-0 space-y-1.5 text-white/50 min-w-0"
+                      style={{ fontSize: 19, lineHeight: 1.35 }}
+                    >
+                      <p className="break-words">
+                        Release: <span className="text-white/70">{shareReleaseDate}</span>
+                      </p>
+                      <p className="break-words">
+                        Placed: <span className="text-white/70">{sharePlacedDate}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex-1 min-h-[8px]" aria-hidden />
+
+                    {/* Footer */}
+                    <div className="shrink-0 pt-5 mt-auto border-t border-white/15 text-center space-y-1.5 w-full">
+                      <p
+                        className="font-semibold tracking-wide text-white/90"
+                        style={{ fontSize: 24, letterSpacing: '0.02em' }}
+                      >
+                        boxofficecalls.com
+                      </p>
+                      <p className="text-[18px] text-white/45 leading-snug px-2">
+                        Track your calls. Prove your edge.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-1">
+          <div className="flex items-center justify-end gap-3 pt-1 shrink-0">
             <button
               onClick={handleDownload}
               className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary hover:bg-primary-dark text-white transition-colors"
@@ -455,7 +825,7 @@ export default function UserDashboardContent({
                     {loading ? (
                       <div className="animate-pulse bg-cinema-cardHighlight h-6 w-16 rounded"></div>
                     ) : (
-                      `$${totalValue.toFixed(2)}`
+                      `${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} points`
                     )}
                   </div>
                 </div>
@@ -591,15 +961,15 @@ export default function UserDashboardContent({
                           </div>
                           <div>
                             <p className="text-sm text-cinema-textMuted">Selected Range</p>
-                            <p className="font-medium text-cinema-text">{bet.selected_range}</p>
+                            <p className="font-medium text-cinema-text">{formatBetRangeDisplay(bet.selected_range)}</p>
                           </div>
                           <div>
                             <p className="text-sm text-cinema-textMuted">Points</p>
-                            <p className="font-medium text-cinema-text">{formatCurrency(bet.points)}</p>
+                            <p className="font-medium text-cinema-text">{formatPointsValue(bet.points)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-cinema-textMuted">Potential Payout</p>
-                            <p className="font-medium text-green-400">{formatCurrency(bet.potential_payout)}</p>
+                            <p className="text-sm text-cinema-textMuted">Potential payout (points)</p>
+                            <p className="font-medium text-green-400">{formatPointsValue(bet.potential_payout)}</p>
                           </div>
                           <div>
                             <p className="text-sm text-cinema-textMuted">Bet Status</p>
@@ -732,15 +1102,15 @@ export default function UserDashboardContent({
                           </div>
                           <div>
                             <p className="text-sm text-cinema-textMuted">Selected Range</p>
-                            <p className="font-medium text-cinema-text">{bet.selected_range}</p>
+                            <p className="font-medium text-cinema-text">{formatBetRangeDisplay(bet.selected_range)}</p>
                           </div>
                           <div>
                             <p className="text-sm text-cinema-textMuted">Points</p>
-                            <p className="font-medium text-cinema-text">{formatCurrency(bet.points)}</p>
+                            <p className="font-medium text-cinema-text">{formatPointsValue(bet.points)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-cinema-textMuted">Potential Payout</p>
-                            <p className="font-medium text-green-400">{formatCurrency(bet.potential_payout)}</p>
+                            <p className="text-sm text-cinema-textMuted">Potential payout (points)</p>
+                            <p className="font-medium text-green-400">{formatPointsValue(bet.potential_payout)}</p>
                           </div>
                           <div>
                             <p className="text-sm text-cinema-textMuted">Bet Status</p>
@@ -757,7 +1127,7 @@ export default function UserDashboardContent({
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-cinema-textMuted">Box Office Outcome</p>
+                            <p className="text-sm text-cinema-textMuted">Box office (USD)</p>
                             <p className="font-medium text-cinema-text">
                               {bet.market.outcome !== null && bet.market.outcome !== undefined 
                                 ? (() => {
@@ -806,6 +1176,7 @@ export default function UserDashboardContent({
         <BetCardModal
           isOpen={true}
           onClose={() => setActiveBetModal(null)}
+          username={username}
           bet={activeBetModal.bet}
           isHistory={activeBetModal.isHistory}
         />
