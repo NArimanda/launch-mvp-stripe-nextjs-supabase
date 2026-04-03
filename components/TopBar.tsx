@@ -171,6 +171,12 @@ export default function TopBar() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <Link
+            href="/about"
+            className="px-5 py-1.5 text-base font-medium text-cinema-text border border-cinema-border hover:bg-cinema-cardHighlight rounded-full transition-colors"
+          >
+            About
+          </Link>
           {!user ? (
             <>
               <Link

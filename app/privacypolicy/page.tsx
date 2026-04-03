@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="text-neutral-600">
-            This page renders your Termly privacy policy content below.
+ 
           </p>
         </header>
 

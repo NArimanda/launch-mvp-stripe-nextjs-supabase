@@ -9,11 +9,14 @@ import { debugLog } from '@/utils/debugLog';
 // List of public routes that don't require authentication
 const PUBLIC_ROUTES = [
   '/',  // Add landing page
-  '/login', 
-  '/signup', 
-  '/verify-email', 
-  '/reset-password', 
-  '/update-password'
+  '/login',
+  '/signup',
+  '/verify-email',
+  '/reset-password',
+  '/update-password',
+  '/about',
+  '/terms',
+  '/privacypolicy',
 ];
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {

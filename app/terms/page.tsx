@@ -135,7 +135,6 @@ export default function TermsPage() {
             Terms and Conditions
           </h1>
           <p className="text-neutral-600">
-            Your terms and conditions content is rendered in the section below.
           </p>
         </header>
 
