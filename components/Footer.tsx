@@ -18,6 +18,12 @@ export default function Footer() {
           >
             Terms and Conditions
           </Link>
+          <Link
+            href="/contact"
+            className="hover:text-cinema-text transition-colors underline underline-offset-2"
+          >
+            Contact
+          </Link>
         </nav>
       </div>
     </footer>
