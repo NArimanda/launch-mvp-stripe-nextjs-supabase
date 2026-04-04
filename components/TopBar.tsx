@@ -15,47 +15,12 @@ export default function TopBar() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isLoadingAdmin, setIsLoadingAdmin] = useState(true);
   const [netBalance, setNetBalance] = useState<number | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
   // State for tracking logout process
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // Check admin status
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user?.id) {
-        setIsAdmin(false);
-        setIsLoadingAdmin(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(data?.is_admin === true);
-        }
-      } catch (err) {
-        console.error('Error checking admin status:', err);
-        setIsAdmin(false);
-      } finally {
-        setIsLoadingAdmin(false);
-      }
-    };
-
-    checkAdmin();
-  }, [user?.id]);
 
   // Calculate net balance (wallet balance + locked bet points)
   useEffect(() => {
@@ -176,6 +141,12 @@ export default function TopBar() {
             className="px-5 py-1.5 text-base font-medium text-cinema-text border border-cinema-border hover:bg-cinema-cardHighlight rounded-full transition-colors"
           >
             About
+          </Link>
+          <Link
+            href="/posts"
+            className="px-5 py-1.5 text-base font-medium text-cinema-text border border-cinema-border hover:bg-cinema-cardHighlight rounded-full transition-colors"
+          >
+            Posts
           </Link>
           {!user ? (
             <>

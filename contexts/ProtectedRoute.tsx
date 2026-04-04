@@ -18,7 +18,14 @@ const PUBLIC_ROUTES = [
   '/terms',
   '/privacypolicy',
   '/contact',
+  '/posts',
 ];
+
+function isPublicPathname(pathname: string): boolean {
+  if (PUBLIC_ROUTES.includes(pathname)) return true;
+  if (pathname.startsWith('/posts/')) return true;
+  return false;
+}
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -31,7 +38,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     isLoading,
     userEmail: user?.email,
     userId: user?.id,
-    isPublicRoute: PUBLIC_ROUTES.includes(pathname),
+    isPublicRoute: isPublicPathname(pathname),
   });
 
   useEffect(() => {
@@ -41,10 +48,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       isLoading,
       userEmail: user?.email,
       userId: user?.id,
-      isPublicRoute: PUBLIC_ROUTES.includes(pathname),
+      isPublicRoute: isPublicPathname(pathname),
     });
 
-    if (!isLoading && !user && !PUBLIC_ROUTES.includes(pathname)) {
+    if (!isLoading && !user && !isPublicPathname(pathname)) {
       const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
       debugLog('[ProtectedRoute] REDIRECTING TO LOGIN', {
         pathname,
@@ -66,7 +73,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   // Only render children if we're on a public route or user is authenticated
-  if (PUBLIC_ROUTES.includes(pathname) || user) {
+  if (isPublicPathname(pathname) || user) {
     return <>{children}</>;
   }
 
