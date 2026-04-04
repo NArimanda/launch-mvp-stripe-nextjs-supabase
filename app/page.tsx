@@ -1,4 +1,5 @@
 import MovieRow from "@/components/MovieRow";
+import LatestPostPreview from "@/components/LatestPostPreview";
 import SearchBar from "@/components/SearchBar";
 import InstructionsSection from "@/components/InstructionsSection";
 import { createClient } from "@/utils/supabase/server";
@@ -54,6 +55,17 @@ export default async function Home() {
         (movie, index, self) => index === self.findIndex((x) => x.id === movie.id),
       ) ?? [];
 
+  const { data: latestPost, error: latestPostError } = await supabase
+    .from("posts")
+    .select("slug, title, teaser_image_url")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestPostError) {
+    console.error("home latest post:", latestPostError);
+  }
+
   return (
     <main className="min-h-screen bg-cinema-page px-4 py-6 max-w-7xl mx-auto">
       {/* Instructions Section */}
@@ -61,6 +73,14 @@ export default async function Home() {
 
       {/* Releasing Soon - First row */}
       <MovieRow title="Releasing Soon" movies={upcoming10 || []} />
+
+      {latestPost?.slug ? (
+        <LatestPostPreview
+          slug={latestPost.slug}
+          title={latestPost.title}
+          teaser_image_url={latestPost.teaser_image_url}
+        />
+      ) : null}
 
       {/* In Theaters and Recent Archive Section */}
       {!!(inTheaters && inTheaters.length) && <MovieRow title="In Theaters" movies={inTheaters} />}

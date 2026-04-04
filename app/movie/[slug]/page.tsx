@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import MovieComments from "@/components/comments/MovieComments";
+import AdminDeleteMovieButton from "@/components/AdminDeleteMovieButton";
 
 function normalizeSlug(input: string) {
   const s = decodeURIComponent(input)
@@ -44,6 +45,17 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
 
   if (!movie) return notFound();
 
+  const { data: { user: authUser } } = await supabase.auth.getUser();
+  let isAdmin = false;
+  if (authUser) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", authUser.id)
+      .maybeSingle();
+    isAdmin = profile?.is_admin === true;
+  }
+
   const marketButtons = [
     { title: "Opening Weekend", timeframe: "weekend" },
     { title: "First Month", timeframe: "month" },
@@ -67,6 +79,9 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
             </p>
           )}
           {movie.description && <p className="mt-3 text-cinema-textMuted">{movie.description}</p>}
+          {isAdmin ? (
+            <AdminDeleteMovieButton movieId={movie.id} movieTitle={movie.title} />
+          ) : null}
         </div>
       </div>
 
