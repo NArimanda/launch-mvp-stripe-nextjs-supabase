@@ -8,8 +8,9 @@ const UUID_RE =
 
 /**
  * Admin-only: delete a movie and restore user wallets.
- * Resolved markets are unresolve_market'd first (JWT user client) so payouts are reversed
- * before refunding each bet's stake (bets.points). Not atomic across steps — see plan.
+ * Resolved markets are unresolve_market'd first (JWT user client) so payouts are reversed.
+ * Refund + bet deletion runs in DB function admin_refund_bets_for_movie (single transaction)
+ * so Total Value (balance + locked stakes) never double-counts. Run supabase/admin_refund_bets_for_movie.sql in Supabase.
  */
 export async function POST(request: Request) {
   try {
@@ -71,7 +72,6 @@ export async function POST(request: Request) {
     }
 
     const marketList = markets ?? [];
-    const marketIds = marketList.map((m) => m.id);
 
     // Must use user JWT — unresolve_market checks auth.uid() and is_admin.
     for (const m of marketList) {
@@ -89,82 +89,21 @@ export async function POST(request: Request) {
       }
     }
 
-    if (marketIds.length > 0) {
-      const { data: bets, error: betsError } = await supabaseAdmin
-        .from('bets')
-        .select('user_id, points')
-        .in('market_id', marketIds);
+    const { error: refundRpcError } = await supabaseAdmin.rpc(
+      'admin_refund_bets_for_movie',
+      { p_movie_id: movieId },
+    );
 
-      if (betsError) {
-        console.error('admin delete movie: bets fetch', betsError);
-        return NextResponse.json(
-          { error: betsError.message || 'Failed to load bets' },
-          { status: 500 },
-        );
-      }
-
-      const refundByUser = new Map<string, number>();
-      for (const bet of bets ?? []) {
-        const uid = bet.user_id as string;
-        const pts = Number(bet.points) || 0;
-        if (!uid || pts <= 0) continue;
-        refundByUser.set(uid, (refundByUser.get(uid) ?? 0) + pts);
-      }
-
-      for (const [userId, amount] of refundByUser) {
-        const { data: wallet, error: wErr } = await supabaseAdmin
-          .from('wallets')
-          .select('balance')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (wErr) {
-          console.error('admin delete movie: wallet fetch', wErr);
-          return NextResponse.json(
-            { error: wErr.message || 'Failed to load wallet for refund' },
-            { status: 500 },
-          );
-        }
-
-        if (wallet) {
-          const { error: upErr } = await supabaseAdmin
-            .from('wallets')
-            .update({ balance: Number(wallet.balance) + amount })
-            .eq('user_id', userId);
-          if (upErr) {
-            console.error('admin delete movie: wallet update', upErr);
-            return NextResponse.json(
-              { error: upErr.message || 'Failed to credit wallet' },
-              { status: 500 },
-            );
-          }
-        } else {
-          const { error: insErr } = await supabaseAdmin.from('wallets').insert({
-            user_id: userId,
-            balance: amount,
-          });
-          if (insErr) {
-            console.error('admin delete movie: wallet insert', insErr);
-            return NextResponse.json(
-              { error: insErr.message || 'Failed to create wallet for refund' },
-              { status: 500 },
-            );
-          }
-        }
-      }
-
-      const { error: delBetsError } = await supabaseAdmin
-        .from('bets')
-        .delete()
-        .in('market_id', marketIds);
-
-      if (delBetsError) {
-        console.error('admin delete movie: delete bets', delBetsError);
-        return NextResponse.json(
-          { error: delBetsError.message || 'Failed to delete bets' },
-          { status: 500 },
-        );
-      }
+    if (refundRpcError) {
+      console.error('admin delete movie: admin_refund_bets_for_movie', refundRpcError);
+      return NextResponse.json(
+        {
+          error:
+            refundRpcError.message ||
+            'Failed to refund bets (ensure supabase/admin_refund_bets_for_movie.sql is applied)',
+        },
+        { status: 500 },
+      );
     }
 
     const { error: delMarketsError } = await supabaseAdmin
