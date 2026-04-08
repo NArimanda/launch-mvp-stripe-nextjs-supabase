@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/LoginForm';
-import { supabase } from '@/utils/supabase';
 import { debugLog } from '@/utils/debugLog';
 
 export default function LoginPage() {
@@ -12,19 +11,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [clientUserId, setClientUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check client-side user
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setClientUserId(user?.id || null);
-      debugLog('[LoginPage] Client user ID:', user?.id);
-      if (user) {
-        debugLog('[LoginPage] User detected, redirecting to dashboard');
-        router.replace('/dashboard');
-      }
-    });
-  }, [router]);
 
   useEffect(() => {
     if (user) {
@@ -78,11 +64,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-cinema-page">
-      {clientUserId && (
-        <div className="bg-cinema-card border-b border-cinema-border p-2 text-xs text-cinema-textMuted">
-          Client User ID: {clientUserId}
-        </div>
-      )}
       <div className="min-h-screen flex mt-20 justify-center px-4">
         <div className="w-full max-w-md">
           {/* <h1 className="text-4xl font-bold text-center mb-8 text-primary dark:text-white">

@@ -19,8 +19,7 @@ export default async function DashboardPage() {
     .single();
 
   if (userError || !userProfile || !userProfile.username) {
-    // If no username found, redirect to login
-    redirect('/login');
+    redirect('/set-username');
   }
 
   // Redirect to the user's dashboard
