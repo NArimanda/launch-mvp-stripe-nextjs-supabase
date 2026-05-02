@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:memory": "node --max-old-space-size=4096 ./node_modules/.bin/next dev",
-    "build": "next build",
-    "build:memory": "node --max-old-space-size=4096 ./node_modules/.bin/next build",
-    "start": "next start",
+    "build": "cross-env NEXT_DIST_DIR=.next-build next build",
+    "build:memory": "cross-env NEXT_DIST_DIR=.next-build node --max-old-space-size=4096 ./node_modules/.bin/next build",
+    "start": "cross-env NEXT_DIST_DIR=.next-build next start",
     "lint": "next lint",
     "clean": "powershell -Command \"if (Test-Path .next) { Remove-Item -Recurse -Force .next }; if (Test-Path node_modules\\.cache) { Remove-Item -Recurse -Force node_modules\\.cache }\""
   },
@@ -46,6 +46,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-scroll": "^1.8.10",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.1.3",
     "postcss": "^8",

@@ -22,6 +22,38 @@ export default function TopBar() {
   // State for tracking logout process
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchAdminStatus() {
+      if (!user?.id) {
+        setIsAdmin(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (error) {
+        console.error('Error fetching admin status:', error);
+        setIsAdmin(false);
+        return;
+      }
+      setIsAdmin(data?.is_admin === true);
+    }
+
+    fetchAdminStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   // Calculate net balance (wallet balance + locked bet points)
   useEffect(() => {
     let cancelled = false;
@@ -148,6 +180,14 @@ export default function TopBar() {
           >
             Posts
           </Link>
+          {user && isAdmin === true ? (
+            <Link
+              href="/admin/movies/new"
+              className="px-5 py-1.5 text-base font-medium text-white bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-subtle hover:shadow-hover"
+            >
+              Add movie
+            </Link>
+          ) : null}
           {!user ? (
             <>
               <Link

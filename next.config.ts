@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Local production builds use `.next-build` when NEXT_DIST_DIR is set (see package.json)
+  // so `npm run dev` can keep `.next/trace` open on Windows without EPERM during `npm run build`.
+  // Vercel/CI omit the env var and use the default `.next`.
+  distDir: process.env.NEXT_DIST_DIR?.trim() || ".next",
   images: {
     remotePatterns: [
       {
