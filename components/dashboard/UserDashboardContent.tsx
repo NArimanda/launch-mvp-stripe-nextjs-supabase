@@ -785,7 +785,7 @@ export default function UserDashboardContent({
               <button
                 type="button"
                 onClick={() => setIsStatsModalOpen(true)}
-                className="text-xs sm:text-sm px-3 py-1.5 rounded-md border border-cinema-border text-cinema-text hover:bg-cinema-cardHighlight transition-colors"
+                className="px-5 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-full text-sm sm:text-base font-medium transition-colors shadow-subtle hover:shadow-hover"
               >
                 View Stats Card
               </button>
@@ -998,7 +998,7 @@ export default function UserDashboardContent({
                       <button
                         type="button"
                         onClick={() => setActiveBetModal({ bet, isHistory: false })}
-                        className="inline-flex text-xs text-cinema-accent hover:underline"
+                        className="inline-flex items-center justify-center px-5 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
                       >
                         View Bet Card
                       </button>
@@ -1144,7 +1144,7 @@ export default function UserDashboardContent({
                       <button
                         type="button"
                         onClick={() => setActiveBetModal({ bet, isHistory: true })}
-                        className="inline-flex text-xs text-cinema-accent hover:underline"
+                        className="inline-flex items-center justify-center px-5 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-full text-sm font-medium transition-colors shadow-subtle hover:shadow-hover"
                       >
                         View Bet Card
                       </button>
