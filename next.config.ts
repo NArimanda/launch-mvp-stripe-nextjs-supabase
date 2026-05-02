@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Local production builds use `.next-build` when NEXT_DIST_DIR is set (see package.json)
-  // so `npm run dev` can keep `.next/trace` open on Windows without EPERM during `npm run build`.
-  // Vercel/CI omit the env var and use the default `.next`.
+  // Default output directory is `.next` (used by `npm run build`/`npm start` and by Vercel).
+  // The opt-in `npm run build:local` / `start:local` scripts set NEXT_DIST_DIR=.next-build to
+  // avoid the Windows EPERM on `.next/trace` when `npm run dev` is also running. Do NOT set
+  // NEXT_DIST_DIR on Vercel — Vercel's Next.js integration looks for output in `.next`.
   distDir: process.env.NEXT_DIST_DIR?.trim() || ".next",
   images: {
     remotePatterns: [

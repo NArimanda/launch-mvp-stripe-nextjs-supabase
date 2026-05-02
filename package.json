@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "dev:memory": "node --max-old-space-size=4096 ./node_modules/.bin/next dev",
-    "build": "cross-env NEXT_DIST_DIR=.next-build next build",
-    "build:memory": "cross-env NEXT_DIST_DIR=.next-build node --max-old-space-size=4096 ./node_modules/.bin/next build",
-    "start": "cross-env NEXT_DIST_DIR=.next-build next start",
+    "build": "next build",
+    "build:memory": "node --max-old-space-size=4096 ./node_modules/.bin/next build",
+    "start": "next start",
+    "build:local": "cross-env NEXT_DIST_DIR=.next-build next build",
+    "build:memory:local": "cross-env NEXT_DIST_DIR=.next-build node --max-old-space-size=4096 ./node_modules/.bin/next build",
+    "start:local": "cross-env NEXT_DIST_DIR=.next-build next start",
     "lint": "next lint",
     "clean": "powershell -Command \"if (Test-Path .next) { Remove-Item -Recurse -Force .next }; if (Test-Path node_modules\\.cache) { Remove-Item -Recurse -Force node_modules\\.cache }\""
   },
