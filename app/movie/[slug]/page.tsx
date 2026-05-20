@@ -1,60 +1,17 @@
-import { createClient } from "@/utils/supabase/server";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import MovieComments from "@/components/comments/MovieComments";
-import AdminDeleteMovieButton from "@/components/AdminDeleteMovieButton";
+import AdminDeleteMovieGate from "@/components/movies/AdminDeleteMovieGate";
+import { getMovieBySlug } from "@/lib/data/movies";
 
-function normalizeSlug(input: string) {
-  const s = decodeURIComponent(input)
-    .replace(/\u00A0/g, ' ')   // convert NBSP to regular space
-    .replace(/\s+/g, ' ')      // collapse multiple spaces
-    .trim();
-  return s;
-}
+export const revalidate = 300;
 
 export default async function MoviePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const raw = normalizeSlug(slug);
-  const candidateSlugs = Array.from(new Set([
-    raw,
-    raw.replace(/-/g, ' '),   // handle links that used hyphens
-  ]));
-
-  // Try to match any of the candidates
-  const query = supabase
-    .from("movies")
-    .select("id,slug,title,image_url,release_date,description")
-    .in("slug", candidateSlugs)
-    .limit(1);
-
-  const { data: rows } = await query;
-  let movie = rows?.[0];
-
-  // Fallback: loose match on title if still not found
-  if (!movie) {
-    const { data: rows2 } = await supabase
-      .from("movies")
-      .select("id,slug,title,image_url,release_date,description")
-      .ilike("title", raw)        // exact-ish, case-insensitive
-      .limit(1);
-    movie = rows2?.[0];
-  }
+  const movie = await getMovieBySlug(slug);
 
   if (!movie) return notFound();
-
-  const { data: { user: authUser } } = await supabase.auth.getUser();
-  let isAdmin = false;
-  if (authUser) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("is_admin")
-      .eq("id", authUser.id)
-      .maybeSingle();
-    isAdmin = profile?.is_admin === true;
-  }
 
   const marketButtons = [
     { title: "Opening Weekend", timeframe: "weekend" },
@@ -79,9 +36,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
             </p>
           )}
           {movie.description && <p className="mt-3 text-cinema-textMuted">{movie.description}</p>}
-          {isAdmin ? (
-            <AdminDeleteMovieButton movieId={movie.id} movieTitle={movie.title} />
-          ) : null}
+          <AdminDeleteMovieGate movieId={movie.id} movieTitle={movie.title} />
         </div>
       </div>
 

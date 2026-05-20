@@ -63,6 +63,7 @@ export async function createPost(
     return insertError.message || 'Could not create post.';
   }
 
+  revalidatePath('/');
   revalidatePath('/posts');
   revalidatePath(`/posts/${slug}`);
   redirect(`/posts/${slug}`);

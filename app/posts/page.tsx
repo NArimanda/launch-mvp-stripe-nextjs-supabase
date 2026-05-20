@@ -1,36 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/utils/supabase/server';
+import AdminPostsToolbar from '@/components/posts/AdminPostsToolbar';
+import { getPosts } from '@/lib/data/posts';
 
 export const metadata: Metadata = {
   title: 'Posts',
   description: 'Updates and notes from BoxOfficeCalls.',
 };
 
+export const revalidate = 300;
+
 export default async function PostsPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  let isAdmin = false;
-  if (user) {
-    const { data: profile } = await supabase
-      .from('users')
-      .select('is_admin')
-      .eq('id', user.id)
-      .maybeSingle();
-    isAdmin = profile?.is_admin === true;
-  }
-
-  const { data: posts, error } = await supabase
-    .from('posts')
-    .select('id, title, slug, teaser_image_url, created_at')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('posts list:', error);
-  }
-
-  const rows = posts ?? [];
+  const rows = await getPosts();
 
   return (
     <main className="min-h-screen bg-white px-4 py-10 text-neutral-900">
@@ -40,14 +21,7 @@ export default async function PostsPage() {
             <h1 className="text-3xl font-bold text-black">Posts</h1>
             <p className="mt-2 text-neutral-600 text-[15px]">News and updates.</p>
           </div>
-          {isAdmin ? (
-            <Link
-              href="/admin/posts/new"
-              className="shrink-0 inline-flex items-center justify-center rounded-full bg-neutral-900 px-5 py-2 text-sm font-medium text-white hover:bg-neutral-800 transition-colors"
-            >
-              New post
-            </Link>
-          ) : null}
+          <AdminPostsToolbar />
         </header>
 
         {rows.length === 0 ? (

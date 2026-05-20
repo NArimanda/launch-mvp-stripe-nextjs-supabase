@@ -1,17 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/utils/supabase/server';
+import { getPost } from '@/lib/data/posts';
+
+export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: post } = await supabase
-    .from('posts')
-    .select('title, body')
-    .eq('slug', slug)
-    .maybeSingle();
+  const post = await getPost(slug);
 
   if (!post) {
     return { title: 'Post' };
@@ -32,14 +29,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PostDetailPage({ params }: Props) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: post, error } = await supabase
-    .from('posts')
-    .select('title, slug, teaser_image_url, body, created_at')
-    .eq('slug', slug)
-    .maybeSingle();
+  const post = await getPost(slug);
 
-  if (error || !post) {
+  if (!post) {
     notFound();
   }
 

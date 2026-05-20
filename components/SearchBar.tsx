@@ -1,22 +1,34 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 type Result = { id: string; slug: string; title: string; image_url: string | null; release_date: string | null; };
 
+const DEBOUNCE_MS = 300;
+const MIN_QUERY_LENGTH = 2;
+
 export default function SearchBar() {
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   const [open, setOpen] = useState(false);
 
-  const debouncedQ = useMemo(() => q, [q]); // simple; can add real debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [q]);
 
   useEffect(() => {
     let active = true;
     (async () => {
       const params = new URLSearchParams();
-      if (debouncedQ) params.set("q", debouncedQ);
+      const trimmed = debouncedQ.trim();
+      if (trimmed.length >= MIN_QUERY_LENGTH) {
+        params.set("q", trimmed);
+      }
       const res = await fetch(`/api/search?${params.toString()}`, { cache: "no-store" });
       const json = await res.json();
       if (active) setResults(json.results || []);

@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createPublicSupabase } from "@/utils/supabase/public";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") || "").trim();
 
-  const supabase = await createClient();
+  const supabase = createPublicSupabase();
   let query = supabase
     .from("movies")
     .select("id,slug,title,image_url,release_date")
     .order("release_date", { ascending: true })
     .limit(50);
 
-  if (q) {
+  if (q.length >= 2) {
     query = query.ilike("title", `%${q}%`);
   }
 
