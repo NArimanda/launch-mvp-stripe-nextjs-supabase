@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MessageSquare, Reply, Check, Trash2 } from 'lucide-react';
 import { approveCommentAction, deleteCommentAction, toggleBanUserAction } from '@/app/api/comments/actions';
-import { debugLog } from '@/utils/debugLog';
 import ExpandableCommentImage from './ExpandableCommentImage';
 
 const MAX_REPLIES_PER_PARENT = 3;
@@ -477,18 +476,6 @@ export default function MovieCommentsList({
         commentsRef.current = fetchedComments;
         setNextCursor(fetchedCursor);
         setHasMore(fetchedCursor !== null);
-        
-        // Debug: log user ID and pending count
-        if (process.env.NODE_ENV === 'development') {
-          const { data: { user: authUser } } = await supabase.auth.getUser();
-          const pendingCount = fetchedComments.filter((c: Comment) => c.approved === false).length;
-          debugLog('[MovieCommentsList] Debug (fetched):', {
-            userId: authUser?.id || null,
-            pendingCount,
-            totalComments: fetchedComments.length,
-            hasMore: fetchedCursor !== null
-          });
-        }
       } catch (err) {
         console.error('Error fetching comments:', err);
         let errorMessage = 'Failed to load comments';

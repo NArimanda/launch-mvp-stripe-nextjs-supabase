@@ -3,7 +3,6 @@
 import { createServerSupabase } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
 import { revalidatePath } from 'next/cache';
-import { debugLog } from '@/utils/debugLog';
 
 export async function approveComment(prevState: string | null, formData: FormData): Promise<string | null> {
   try {
@@ -18,8 +17,7 @@ export async function approveComment(prevState: string | null, formData: FormDat
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    debugLog('SERVER ACTION USER:', user?.id);
-    
+        
     if (authError || !user) {
       return 'Not authenticated';
     }
@@ -73,8 +71,7 @@ export async function deleteComment(prevState: string | null, formData: FormData
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    debugLog('SERVER ACTION USER:', user?.id);
-    
+        
     if (authError || !user) {
       return 'Not authenticated';
     }

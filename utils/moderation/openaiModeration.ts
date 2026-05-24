@@ -1,7 +1,6 @@
 'use server';
 
 import OpenAI from 'openai';
-import { debugLog } from '@/utils/debugLog';
 
 // Initialize OpenAI client (server-side only)
 const openai = new OpenAI({
@@ -37,14 +36,7 @@ export async function moderateComment(
     const hasImage = !!imageUrl;
     
     // Log entry point
-    debugLog('[Moderation] Starting moderation', {
-      commentId: commentId || null,
-      textPreview,
-      textLength: text.length,
-      hasImage,
-      model
-    });
-
+    
     // Build input array dynamically
     const content: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }> = [
       { type: 'text', text }
@@ -61,30 +53,10 @@ export async function moderateComment(
       try {
         const urlObj = new URL(imageUrl);
         const maskedUrl = `${urlObj.protocol}//${urlObj.host}/...`;
-        debugLog('[Moderation] API Request', {
-          commentId: commentId || null,
-          model,
-          inputTypes: ['text', 'image_url'],
-          textLength: text.length,
-          imageUrl: maskedUrl
-        });
-      } catch {
-        debugLog('[Moderation] API Request', {
-          commentId: commentId || null,
-          model,
-          inputTypes: ['text', 'image_url'],
-          textLength: text.length,
-          imageUrl: '[unable to parse URL]'
-        });
-      }
+              } catch {
+              }
     } else {
-      debugLog('[Moderation] API Request', {
-        commentId: commentId || null,
-        model,
-        inputTypes: ['text'],
-        textLength: text.length
-      });
-    }
+          }
 
     // Call OpenAI moderation API
     const response = await openai.moderations.create({
@@ -99,27 +71,9 @@ export async function moderateComment(
     const flagged = response.results.some(result => result.flagged === true);
 
     // Log full API response
-    debugLog('[Moderation] API Response', {
-      commentId: commentId || null,
-      id: response.id,
-      model: response.model,
-      results: response.results.map((r, index) => ({
-        index,
-        flagged: r.flagged,
-        categories: r.categories,
-        categoryScores: r.category_scores
-      })),
-      durationMs: duration
-    });
-
+    
     // Log final decision with clear flagged status
-    debugLog('[Moderation] Final Decision', {
-      commentId: commentId || null,
-      flagged,
-      durationMs: duration,
-      hasImage
-    });
-
+    
     return { flagged };
   } catch (error) {
     const duration = Date.now() - startTime;

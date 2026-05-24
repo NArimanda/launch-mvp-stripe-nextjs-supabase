@@ -160,11 +160,6 @@ export default function MarketHeatmap({ marketId, timeframe }: MarketHeatmapProp
   const [rows, setRows] = React.useState<HeatmapRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = React.useState<{
-    totalBets: number;
-    totalPoints: number;
-    maxBinPoints: number;
-  } | null>(null);
   
   // Map timeframe to MarketType (same as BetForm.tsx does)
   const marketType: MarketType = React.useMemo(() => {
@@ -206,14 +201,6 @@ export default function MarketHeatmap({ marketId, timeframe }: MarketHeatmapProp
         }));
         
         setRows(heatmapRows);
-        
-        // Compute debug info
-        if (process.env.NODE_ENV === 'development') {
-          const totalBets = bets.length;
-          const totalPoints = bets.reduce((sum, bet) => sum + (bet.points || 0), 0);
-          const maxBinPoints = Math.max(...totals, 0);
-          setDebugInfo({ totalBets, totalPoints, maxBinPoints });
-        }
       } catch (err) {
         console.error("Error computing heatmap:", err);
         setError(err instanceof Error ? err.message : "Failed to load heatmap data");
@@ -251,15 +238,6 @@ export default function MarketHeatmap({ marketId, timeframe }: MarketHeatmapProp
   
   return (
     <div className="rounded-lg border border-cinema-border p-4 bg-cinema-card">
-      {/* Debug info (dev only) */}
-      {process.env.NODE_ENV === 'development' && debugInfo && (
-        <div className="mb-3 p-2 bg-cinema-cardHighlight rounded text-xs font-mono text-cinema-textMuted">
-          <div>Total bets: {debugInfo.totalBets}</div>
-          <div>Total points: {formatPoints(debugInfo.totalPoints)}</div>
-          <div>Max bin points: {formatPoints(debugInfo.maxBinPoints)}</div>
-        </div>
-      )}
-      
       <div className="space-y-3">
         {rows.map((row) => {
           const widthPct = row.points === 0 

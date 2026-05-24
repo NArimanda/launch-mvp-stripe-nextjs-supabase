@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/LoginForm';
-import { debugLog } from '@/utils/debugLog';
 
 export default function LoginPage() {
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
@@ -14,8 +13,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      debugLog('[LoginPage] AuthContext user detected, redirecting to dashboard');
-      router.replace('/dashboard');
+            router.replace('/dashboard');
     } else {
       setIsLoading(false);
     }
@@ -38,14 +36,12 @@ export default function LoginPage() {
         
         // Wait a moment for cookies to be set, then redirect
         await new Promise(resolve => setTimeout(resolve, 100));
-        debugLog('[LoginPage] Sign up successful, redirecting to dashboard');
-        router.replace('/dashboard');
+                router.replace('/dashboard');
       } else {
         await signInWithEmail(email, password);
         // Wait a moment for cookies to be set, then redirect
         await new Promise(resolve => setTimeout(resolve, 100));
-        debugLog('[LoginPage] Sign in successful, redirecting to dashboard');
-        router.replace('/dashboard');
+                router.replace('/dashboard');
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Authentication failed');

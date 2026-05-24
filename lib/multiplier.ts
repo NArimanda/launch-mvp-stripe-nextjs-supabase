@@ -1,6 +1,5 @@
 // lib/multiplier.ts
 // MVP multiplier logic based on selected bin width
-import { debugLog } from '@/utils/debugLog';
 
 export const MAX_MULT = 3.0;
 export const MULT_Q = 4.0; // Power exponent for width-based penalty
@@ -103,12 +102,5 @@ if (process.env.NODE_ENV === 'development') {
   );
 
   // Log inspection values
-  debugLog('Multiplier curve inspection (N=30):', {
-    [`k=${N} (100%)`]: test1,
-    [`k=24 (80%)`]: test2,
-    [`k=15 (50%)`]: test3,
-    [`k=3 (10%)`]: test4,
-    [`k=1 (3.3%)`]: test5,
-  });
-}
+  }
 

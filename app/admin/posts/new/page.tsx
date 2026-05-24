@@ -1,5 +1,4 @@
 import { createClient } from '@/utils/supabase/server';
-import { debugLog } from '@/utils/debugLog';
 import NewPostForm from './NewPostForm';
 
 export const metadata = {
@@ -10,8 +9,7 @@ export default async function AdminNewPostPage() {
   const supabase = await createClient();
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-  debugLog('ADMIN NEW POST USER:', authUser?.id);
-
+  
   if (authError || !authUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">

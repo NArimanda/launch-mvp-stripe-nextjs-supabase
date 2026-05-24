@@ -313,11 +313,6 @@ export default function BetForm({ marketId, bins, timeframe, marketStatus }: Bet
         hasPlacedBetForMarket ? "opacity-60 cursor-not-allowed" : ""
       }`}
     >
-      <div className="mb-4 p-2 bg-cinema-cardHighlight border border-cinema-border rounded text-xs text-cinema-textMuted">
-        Debug: User ID: {user?.id || 'Not authenticated'} | 
-        User object: {user ? 'Present' : 'Missing'}
-      </div>
-
       {isMarketDisabled && (
         <div className={`mb-4 p-3 rounded-lg border ${
           isMarketClosed 

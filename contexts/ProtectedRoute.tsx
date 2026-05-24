@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {usePathname } from 'next/navigation';
-import { debugLog } from '@/utils/debugLog';
 // import { useRouter, usePathname } from 'next/navigation';
 
 // List of public routes that don't require authentication
@@ -32,33 +31,12 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   // const router = useRouter();
   const pathname = usePathname();
 
-  debugLog('[ProtectedRoute] Component rendering', {
-    pathname,
-    hasUser: !!user,
-    isLoading,
-    userEmail: user?.email,
-    userId: user?.id,
-    isPublicRoute: isPublicPathname(pathname),
-  });
-
+  
   useEffect(() => {
-    debugLog('[ProtectedRoute] useEffect running', {
-      pathname,
-      hasUser: !!user,
-      isLoading,
-      userEmail: user?.email,
-      userId: user?.id,
-      isPublicRoute: isPublicPathname(pathname),
-    });
-
+    
     if (!isLoading && !user && !isPublicPathname(pathname)) {
       const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
-      debugLog('[ProtectedRoute] REDIRECTING TO LOGIN', {
-        pathname,
-        redirectUrl,
-        reason: 'No user and not a public route',
-      });
-      window.location.assign(redirectUrl);
+            window.location.assign(redirectUrl);
     }
   }, [user, isLoading, pathname]);
 

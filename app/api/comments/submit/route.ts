@@ -5,7 +5,6 @@ import { generateSignedImageUrl } from '@/utils/supabase/storage';
 import { createCommentWithCooldown } from '@/app/api/comments/actions';
 import { createServerSupabase } from '@/utils/supabase/server';
 import sharp from 'sharp';
-import { debugLog } from '@/utils/debugLog';
 
 export async function POST(request: Request) {
   try {
@@ -24,15 +23,7 @@ export async function POST(request: Request) {
     const user_id = user.id;
     
     // Parse FormData
-    debugLog('[Comment Submit] Received FormData request');
     const formData = await request.formData();
-    
-    // Log all FormData keys for debugging
-    const formDataKeys: string[] = [];
-    for (const key of formData.keys()) {
-      formDataKeys.push(key);
-    }
-    debugLog('[Comment Submit] FormData keys:', formDataKeys);
     
     // Extract text fields (user_id is no longer from FormData)
     const movie_id = formData.get('movie_id') as string;
@@ -44,13 +35,7 @@ export async function POST(request: Request) {
     
     // Extract optional image file
     const imageFileRaw = formData.get('image');
-    debugLog('[Comment Submit] Image file extraction:', {
-      hasImageField: !!imageFileRaw,
-      imageType: imageFileRaw ? typeof imageFileRaw : 'null',
-      isFile: imageFileRaw instanceof File,
-      isBlob: imageFileRaw instanceof Blob
-    });
-    
+        
     const imageFile = imageFileRaw instanceof File ? imageFileRaw : null;
 
     // Validate required fields (user_id is now from authentication, not FormData)
@@ -63,13 +48,7 @@ export async function POST(request: Request) {
 
     // Validate image if provided
     if (imageFile) {
-      debugLog('[Comment Submit] Image file validation:', {
-        fileName: imageFile.name,
-        fileSize: imageFile.size,
-        fileType: imageFile.type,
-        lastModified: imageFile.lastModified
-      });
-
+      
       // Check if file is actually valid
       if (!(imageFile instanceof File)) {
         console.error('[Comment Submit] Image file is not a valid File instance');
@@ -149,10 +128,8 @@ export async function POST(request: Request) {
         );
       }
 
-      debugLog('[Comment Submit] Image file validation passed');
-    } else {
-      debugLog('[Comment Submit] No image file provided');
-    }
+          } else {
+          }
 
     // Step 1: Insert comment using server action (enforces 1-minute cooldown)
     const result = await createCommentWithCooldown(
@@ -221,17 +198,10 @@ export async function POST(request: Request) {
 
     // Step 2: Handle image upload if present
     if (imageFile && imageFile.size > 0) {
-      debugLog('[Comment Submit] Starting image upload process', {
-        commentId,
-        fileName: imageFile.name,
-        fileSize: imageFile.size,
-        fileType: imageFile.type
-      });
-
+      
       try {
         // Verify bucket exists and is accessible
-        debugLog('[Comment Submit] Verifying bucket access...');
-        const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
+                const { data: buckets, error: bucketError } = await supabaseAdmin.storage.listBuckets();
         
         if (bucketError) {
           console.error('[Comment Submit] Error listing buckets:', {
@@ -264,35 +234,19 @@ export async function POST(request: Request) {
           );
         }
 
-        debugLog('[Comment Submit] Bucket verified:', {
-          commentId,
-          bucketId: commentImagesBucket.id,
-          bucketName: commentImagesBucket.name,
-          bucketPublic: commentImagesBucket.public
-        });
-        // Get file extension
+                // Get file extension
         const ext = imageFile.name.split('.').pop() || 
                    (imageFile.type === 'image/jpeg' ? 'jpg' : 
                     imageFile.type === 'image/png' ? 'png' : 
                     imageFile.type === 'image/webp' ? 'webp' : 'jpg');
         const storagePath = `${user_id}/${commentId}.${ext}`;
 
-        debugLog('[Comment Submit] Prepared storage path:', {
-          commentId,
-          storagePath,
-          extension: ext
-        });
-
+        
         // Convert File to ArrayBuffer for server-side upload
-        debugLog('[Comment Submit] Converting File to ArrayBuffer...');
-        let arrayBuffer: ArrayBuffer;
+                let arrayBuffer: ArrayBuffer;
         try {
           arrayBuffer = await imageFile.arrayBuffer();
-          debugLog('[Comment Submit] ArrayBuffer conversion successful:', {
-            arrayBufferSize: arrayBuffer.byteLength,
-            expectedSize: imageFile.size
-          });
-        } catch (bufferError) {
+                  } catch (bufferError) {
           console.error('[Comment Submit] Failed to convert File to ArrayBuffer:', {
             commentId,
             error: bufferError instanceof Error ? bufferError.message : 'Unknown error',
@@ -302,22 +256,10 @@ export async function POST(request: Request) {
         }
 
         // Convert ArrayBuffer to Buffer
-        debugLog('[Comment Submit] Converting ArrayBuffer to Buffer...');
-        const buffer = Buffer.from(arrayBuffer);
-        debugLog('[Comment Submit] Buffer creation successful:', {
-          bufferLength: buffer.length,
-          expectedLength: imageFile.size
-        });
-
+                const buffer = Buffer.from(arrayBuffer);
+        
         // Upload image to Supabase Storage
-        debugLog('[Comment Submit] Uploading to Supabase Storage...', {
-          commentId,
-          bucket: 'comment-images',
-          storagePath,
-          contentType: imageFile.type,
-          bufferSize: buffer.length
-        });
-
+        
         const { data: uploadData, error: uploadError } = await supabaseAdminStorage.storage
           .from('comment-images')
           .upload(storagePath, buffer, {
@@ -360,25 +302,13 @@ export async function POST(request: Request) {
           );
         }
 
-        debugLog('[Comment Submit] Image upload successful:', {
-          commentId,
-          storagePath,
-          uploadDataPath: uploadData.path,
-          uploadDataId: uploadData.id
-        });
-
+        
         imagePath = storagePath;
         imageMime = imageFile.type;
         imageSize = imageFile.size;
 
         // Update comment with image metadata
-        debugLog('[Comment Submit] Updating comment with image metadata...', {
-          commentId,
-          imagePath,
-          imageMime,
-          imageSize
-        });
-
+        
         const { error: updateError } = await supabaseAdmin
           .from('movie_comments')
           .update({
@@ -407,13 +337,7 @@ export async function POST(request: Request) {
           );
         }
 
-        debugLog('[Comment Submit] Comment updated with image metadata successfully:', {
-          commentId,
-          imagePath,
-          imageMime,
-          imageSize
-        });
-      } catch (imageError) {
+              } catch (imageError) {
         console.error('[Comment Submit] Error processing image:', {
           commentId,
           error: imageError instanceof Error ? imageError.message : 'Unknown error',
@@ -435,14 +359,7 @@ export async function POST(request: Request) {
     // Step 3: Run moderation (text-only or multimodal)
     const hasImage = !!imagePath;
     
-    debugLog('[Moderation] Route: Starting moderation', {
-      commentId,
-      textPreview,
-      hasImage,
-      currentStatus: 'pending',
-      moderationMode: hasImage ? 'multimodal (text + image)' : 'text-only'
-    });
-
+    
     try {
       let signedImageUrl: string | null = null;
       
@@ -466,12 +383,7 @@ export async function POST(request: Request) {
         commentId
       );
       
-      debugLog('[Moderation] Route: Received moderation result', {
-        commentId,
-        flagged: moderationResult.flagged,
-        moderationMode: signedImageUrl ? 'multimodal' : 'text-only'
-      });
-
+      
       // If moderation passes (flagged=false), auto-approve the comment
       if (!moderationResult.flagged) {
         // Defensive check: only auto-approve if comment is still pending
@@ -491,25 +403,12 @@ export async function POST(request: Request) {
             action: 'auto-approve failed'
           });
         } else {
-          debugLog('[Moderation] Route: Comment auto-approved', {
-            commentId,
-            action: 'auto-approved',
-            previousStatus: 'pending',
-            newStatus: 'approved',
-            moderationMode: signedImageUrl ? 'multimodal' : 'text-only'
-          });
-          // Update commentData to reflect approval status
+                    // Update commentData to reflect approval status
           commentData.approved = true;
           commentData.approved_at = new Date().toISOString();
         }
       } else {
-        debugLog('[Moderation] Route: Comment flagged, keeping pending', {
-          commentId,
-          action: 'keep pending',
-          flagged: true,
-          moderationMode: signedImageUrl ? 'multimodal' : 'text-only'
-        });
-      }
+              }
     } catch (moderationError) {
       // Don't block comment creation on moderation failure
       console.error('[Moderation] Route: Error in moderation process', {
@@ -522,8 +421,7 @@ export async function POST(request: Request) {
     }
 
     // Step 4: Re-fetch the complete comment record to ensure we return all latest data
-    debugLog('[Comment Submit] Re-fetching complete comment record...', { commentId });
-    const { data: finalCommentData, error: finalFetchError } = await supabaseAdmin
+        const { data: finalCommentData, error: finalFetchError } = await supabaseAdmin
       .from('movie_comments')
       .select('*')
       .eq('id', commentId)
@@ -540,13 +438,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ data: commentData }, { status: 201 });
     }
 
-    debugLog('[Comment Submit] Comment submission successful:', {
-      commentId,
-      hasImage: !!finalCommentData?.image_path,
-      approved: finalCommentData?.approved,
-      imagePath: finalCommentData?.image_path || null
-    });
-
+    
     return NextResponse.json({ data: finalCommentData }, { status: 201 });
   } catch (err) {
     console.error('Error in submit comment route:', err);

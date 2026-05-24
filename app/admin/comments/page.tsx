@@ -1,7 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import CommentRowClient from './CommentRowClient';
-import { debugLog } from '@/utils/debugLog';
 
 interface Comment {
   id: string;
@@ -31,8 +30,7 @@ export default async function AdminCommentsPage() {
   // Get auth user
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-  debugLog('PAGE USER:', authUser?.id);
-
+  
   if (authError || !authUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -50,7 +48,6 @@ export default async function AdminCommentsPage() {
     .select('id, email, username, is_admin')
     .eq('id', authUser.id)
     .single();
-
 
   // Check if profile exists
   if (profileError || !userProfile) {
@@ -176,7 +173,6 @@ export default async function AdminCommentsPage() {
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Comment Moderation</h1>
         <p className="text-slate-600 dark:text-slate-400">Manage and moderate movie comments</p>
       </div>
-
 
       {/* Pending Comments Section */}
       <section className="mb-8">

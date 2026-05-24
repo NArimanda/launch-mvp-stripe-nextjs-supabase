@@ -1,5 +1,4 @@
 import { createClient } from '@/utils/supabase/server';
-import { debugLog } from '@/utils/debugLog';
 import NewMovieForm from './NewMovieForm';
 
 export const metadata = {
@@ -10,8 +9,7 @@ export default async function AdminNewMoviePage() {
   const supabase = await createClient();
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-  debugLog('ADMIN NEW MOVIE USER:', authUser?.id);
-
+  
   if (authError || !authUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
-import { debugLog } from '@/utils/debugLog';
 import { 
   Session, 
   User, 
@@ -41,80 +40,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
     
     const initializeAuth = async () => {
-      debugLog('[AuthContext] initializeAuth - Starting authentication initialization');
-      try {
+            try {
         setIsLoading(true);
-        debugLog('[AuthContext] initializeAuth - Set isLoading to true');
-
+        
         // First, get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        debugLog('[AuthContext] initializeAuth - getSession result', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userEmail: session?.user?.email,
-          userId: session?.user?.id,
-          sessionExpiresAt: session?.expires_at,
-          error: error ? {
-            message: error.message,
-            status: error.status,
-          } : null,
-        });
-        
+                
         if (error || !mounted) {
-          debugLog('[AuthContext] initializeAuth - Early return', {
-            hasError: !!error,
-            error: error?.message,
-            mounted,
-          });
-          setIsLoading(false);
+                    setIsLoading(false);
           return;
         }
 
         // Update initial state
-        debugLog('[AuthContext] initializeAuth - Setting session and user state', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-        });
-        setSession(session);
+                setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         
         // Then set up listener for future changes
-        debugLog('[AuthContext] initializeAuth - Setting up auth state change listener');
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+                const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
-            debugLog('[AuthContext] Auth state changed', {
-              event,
-              hasSession: !!newSession,
-              hasUser: !!newSession?.user,
-              userEmail: newSession?.user?.email,
-              mounted,
-            });
-            
+                        
             if (!mounted) {
-              debugLog('[AuthContext] Auth state change ignored - component not mounted');
-              return;
+                            return;
             }
             
             const newUser = newSession?.user ?? null;
-            debugLog('[AuthContext] Auth state change - Updating session and user', {
-              hasUser: !!newUser,
-            });
-            setSession(newSession);
+                        setSession(newSession);
             setUser(newUser);
           }
         );
 
         // Only set loading to false after everything is initialized
         if (mounted) {
-          debugLog('[AuthContext] initializeAuth - Initialization complete, setting isLoading to false');
-          setIsLoading(false);
+                    setIsLoading(false);
         }
         
         return () => {
-          debugLog('[AuthContext] initializeAuth - Cleanup function called');
-          mounted = false;
+                    mounted = false;
           subscription.unsubscribe();
         };
       } catch (error) {
@@ -125,8 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorStack: error instanceof Error ? error.stack : 'No stack trace',
         });
         if (mounted) {
-          debugLog('[AuthContext] initializeAuth - Error occurred, setting isLoading to false');
-          setIsLoading(false);
+                    setIsLoading(false);
         }
       }
     };
