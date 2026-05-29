@@ -23,6 +23,7 @@ const PUBLIC_ROUTES = [
 function isPublicPathname(pathname: string): boolean {
   if (PUBLIC_ROUTES.includes(pathname)) return true;
   if (pathname.startsWith('/posts/')) return true;
+  if (pathname.startsWith('/movie/')) return true;
   return false;
 }
 
