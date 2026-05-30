@@ -452,91 +452,120 @@ function RangeSlider({ edges, availableRanges, onRangeChange, formatValue, dolla
   const [isDragging, setIsDragging] = React.useState<"lower" | "upper" | null>(null);
   const sliderRef = React.useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = (thumb: "lower" | "upper") => (e: React.MouseEvent) => {
+  const updateIndexFromClientX = React.useCallback(
+    (clientX: number, thumb: "lower" | "upper") => {
+      if (!sliderRef.current || edges.length <= 1) return;
+
+      const rect = sliderRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, x / rect.width));
+      const index = Math.round(percentage * (edges.length - 1));
+
+      if (thumb === "lower") {
+        const newLowerIndex = Math.max(0, Math.min(index, upperIndex));
+        setLowerIndex(newLowerIndex);
+        onRangeChange(newLowerIndex, upperIndex);
+      } else {
+        const newUpperIndex = Math.max(lowerIndex, Math.min(index, edges.length - 1));
+        setUpperIndex(newUpperIndex);
+        onRangeChange(lowerIndex, newUpperIndex);
+      }
+    },
+    [edges.length, lowerIndex, upperIndex, onRangeChange],
+  );
+
+  const handlePointerDown = (thumb: "lower" | "upper") => (e: React.PointerEvent) => {
     if (disabled) return;
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(thumb);
   };
 
-  const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (disabled || !isDragging || !sliderRef.current) return;
+  const handleTrackPointerDown = (e: React.PointerEvent) => {
+    if (disabled || !sliderRef.current || edges.length <= 1) return;
 
     const rect = sliderRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, x / rect.width));
     const index = Math.round(percentage * (edges.length - 1));
 
-    if (isDragging === "lower") {
-      const newLowerIndex = Math.max(0, Math.min(index, upperIndex));
-      setLowerIndex(newLowerIndex);
-      onRangeChange(newLowerIndex, upperIndex);
-    } else {
-      const newUpperIndex = Math.max(lowerIndex, Math.min(index, edges.length - 1));
-      setUpperIndex(newUpperIndex);
-      onRangeChange(lowerIndex, newUpperIndex);
-    }
-  }, [disabled, isDragging, edges.length, lowerIndex, upperIndex, onRangeChange]);
+    const distToLower = Math.abs(index - lowerIndex);
+    const distToUpper = Math.abs(index - upperIndex);
+    const thumb: "lower" | "upper" = distToLower <= distToUpper ? "lower" : "upper";
 
-  const handleMouseUp = React.useCallback(() => {
-    setIsDragging(null);
-  }, []);
+    setIsDragging(thumb);
+    updateIndexFromClientX(e.clientX, thumb);
+  };
 
   React.useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+    if (!isDragging) return;
 
-  const lowerPercentage = (lowerIndex / (edges.length - 1)) * 100;
-  const upperPercentage = (upperIndex / (edges.length - 1)) * 100;
+    const onPointerMove = (e: PointerEvent) => {
+      updateIndexFromClientX(e.clientX, isDragging);
+    };
+    const onPointerUp = () => setIsDragging(null);
 
-  // Format the range display
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [isDragging, updateIndexFromClientX]);
+
+  const lowerPercentage = edges.length > 1 ? (lowerIndex / (edges.length - 1)) * 100 : 0;
+  const upperPercentage = edges.length > 1 ? (upperIndex / (edges.length - 1)) * 100 : 100;
+
   const formatRangeDisplay = () => {
     const lowerValue = formatValue(dollarsToMillions(edges[lowerIndex]));
-    const upperValue = upperIndex === edges.length - 1 
+    const upperValue = upperIndex === edges.length - 1
       ? formatValue(dollarsToMillions(edges[upperIndex])) + "+"
       : formatValue(dollarsToMillions(edges[upperIndex]));
-    
+
     return `${lowerValue} - ${upperValue}`;
   };
 
+  const thumbHitClass =
+    'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex h-11 w-11 items-center justify-center touch-none';
+
+  const thumbDotClass = `h-5 w-5 rounded-full bg-cinema-card border-2 border-cinema-accent transition-transform ${
+    disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing active:scale-110'
+  }`;
+
   return (
     <div className={`relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      {/* Track */}
-      <div 
+      <div
         ref={sliderRef}
-        className={`h-2 bg-cinema-cardHighlight rounded-full relative ${
+        className={`h-2 bg-cinema-cardHighlight rounded-full relative touch-none select-none ${
           disabled ? 'cursor-not-allowed' : 'cursor-pointer'
         }`}
+        onPointerDown={handleTrackPointerDown}
       >
-        <div 
-          className="absolute h-full bg-cinema-accent rounded-full"
+        <div
+          className="absolute h-full bg-cinema-accent rounded-full pointer-events-none"
           style={{
             left: `${lowerPercentage}%`,
-            width: `${upperPercentage - lowerPercentage}%`
+            width: `${upperPercentage - lowerPercentage}%`,
           }}
         />
-        
+
         <div
-          className={`absolute top-1/2 w-4 h-4 bg-cinema-card border-2 border-cinema-accent rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
-          }`}
+          className={thumbHitClass}
           style={{ left: `${lowerPercentage}%` }}
-          onMouseDown={handleMouseDown("lower")}
-        />
-        
+          onPointerDown={handlePointerDown('lower')}
+        >
+          <div className={thumbDotClass} />
+        </div>
+
         <div
-          className={`absolute top-1/2 w-4 h-4 bg-cinema-card border-2 border-cinema-accent rounded-full transform -translate-y-1/2 -translate-x-1/2 transition-transform z-10 ${
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-110'
-          }`}
+          className={thumbHitClass}
           style={{ left: `${upperPercentage}%` }}
-          onMouseDown={handleMouseDown("upper")}
-        />
+          onPointerDown={handlePointerDown('upper')}
+        >
+          <div className={thumbDotClass} />
+        </div>
       </div>
 
       <div className="mt-3 p-3 bg-cinema-cardHighlight rounded-lg border border-cinema-border">
