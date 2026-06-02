@@ -18,6 +18,8 @@ export default function TopBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileAccountTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileAccountPanelRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [netBalance, setNetBalance] = useState<number | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -134,13 +136,19 @@ export default function TopBar() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideDesktopDropdown = dropdownRef.current?.contains(target) ?? false;
+      const insideMobileAccount =
+        (mobileAccountTriggerRef.current?.contains(target) ?? false) ||
+        (mobileAccountPanelRef.current?.contains(target) ?? false);
+
+      if (isDropdownOpen && !insideDesktopDropdown && !insideMobileAccount) {
         setIsDropdownOpen(false);
       }
       if (
         mobileMenuOpen &&
         headerRef.current &&
-        !headerRef.current.contains(event.target as Node)
+        !headerRef.current.contains(target)
       ) {
         setMobileMenuOpen(false);
       }
@@ -148,7 +156,7 @@ export default function TopBar() {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, isDropdownOpen]);
 
   const handleLogout = async () => {
     try {
@@ -279,6 +287,7 @@ export default function TopBar() {
         <div className="flex md:hidden items-center gap-2">
           {user ? (
             <button
+              ref={mobileAccountTriggerRef}
               type="button"
               onClick={() => {
                 setMobileMenuOpen(false);
@@ -331,7 +340,10 @@ export default function TopBar() {
 
       {/* Mobile dropdown for account (avatar tap) */}
       {user && isDropdownOpen ? (
-        <div className="md:hidden border-t border-cinema-border px-4 py-2 z-[60] bg-cinema-card">
+        <div
+          ref={mobileAccountPanelRef}
+          className="md:hidden border-t border-cinema-border px-4 py-2 z-[60] bg-cinema-card"
+        >
           <Link
             href="/profile"
             className="block px-2 py-3 text-sm text-cinema-text hover:bg-cinema-cardHighlight rounded-lg"
