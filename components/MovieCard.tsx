@@ -1,6 +1,5 @@
 'use client';
 
-import Image from "next/image";
 import Link from "next/link";
 import { memo, useState } from "react";
 
@@ -48,12 +47,14 @@ function MovieCardCore({ slug, title, releaseDate, posterUrl, className = "" }: 
             <div className="animate-pulse bg-cinema-cardHighlight w-full h-full" />
           </div>
         )}
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element -- Supabase posters are pre-sized; skip Vercel optimization */}
+        <img
           src={imageError || !posterUrl ? fallbackPoster : posterUrl}
           alt={title}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
-          className={`object-cover transition-transform duration-300 group-hover:scale-[1.02] ${
+          width={260}
+          height={384}
+          loading="lazy"
+          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02] ${
             imageLoading ? 'opacity-0' : 'opacity-100'
           }`}
           onError={handleImageError}

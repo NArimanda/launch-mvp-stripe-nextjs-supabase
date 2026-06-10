@@ -9,7 +9,6 @@ import {
   Activity,
   History
 } from 'lucide-react';
-import Image from 'next/image';
 import { restoreBalance } from '@/app/actions/walletActions';
 import html2canvas from 'html2canvas';
 
@@ -926,12 +925,14 @@ export default function UserDashboardContent({
                       {/* Movie Poster */}
                       <div className="relative w-16 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-cinema-page border border-cinema-border">
                         {bet.movie.image_url ? (
-                          <Image
+                          // eslint-disable-next-line @next/next/no-img-element -- Supabase posters are pre-sized; skip Vercel optimization
+                          <img
                             src={bet.movie.image_url}
                             alt={bet.movie.slug}
-                            fill
-                            className="object-cover"
-                            sizes="64px"
+                            width={64}
+                            height={96}
+                            loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
@@ -1059,12 +1060,14 @@ export default function UserDashboardContent({
                       {/* Movie Poster */}
                       <div className="relative w-16 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-cinema-page border border-cinema-border">
                         {bet.movie.image_url ? (
-                          <Image
+                          // eslint-disable-next-line @next/next/no-img-element -- Supabase posters are pre-sized; skip Vercel optimization
+                          <img
                             src={bet.movie.image_url}
                             alt={bet.movie.slug}
-                            fill
-                            className="object-cover"
-                            sizes="64px"
+                            width={64}
+                            height={96}
+                            loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

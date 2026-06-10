@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import MovieComments from "@/components/comments/MovieComments";
@@ -22,7 +21,15 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
     <div className="min-h-screen bg-cinema-page px-4 py-6 max-w-5xl mx-auto">
       <div className="flex gap-6">
         <div className="relative w-40 sm:w-56 aspect-[2/3] rounded-lg overflow-hidden bg-cinema-page border border-cinema-border">
-          <Image src={movie.image_url || "/posters/placeholder.jpg"} alt={movie.title} fill className="object-cover" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- Supabase posters are pre-sized; skip Vercel optimization */}
+          <img
+            src={movie.image_url || "/posters/placeholder.jpg"}
+            alt={movie.title}
+            width={260}
+            height={384}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl font-semibold text-cinema-text">{movie.title}</h1>
