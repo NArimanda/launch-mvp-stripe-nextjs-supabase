@@ -2,6 +2,7 @@
 
 import { createServerSupabase } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { notifyBetSettlement } from '@/lib/email/notifyBetSettlement';
 
 export async function setMarketOutcome(prevState: string | null, formData: FormData): Promise<string | null> {
   try {
@@ -52,6 +53,18 @@ export async function setMarketOutcome(prevState: string | null, formData: FormD
     if (userProfile.is_admin !== true) {
       return 'Not authorized. Admin access required.';
     }
+
+    const { data: marketBefore, error: marketBeforeError } = await supabase
+      .from('markets')
+      .select('status')
+      .eq('id', marketId)
+      .single();
+
+    if (marketBeforeError || !marketBefore) {
+      return 'Market not found';
+    }
+
+    const shouldNotify = marketBefore.status !== 'resolved';
     
     // Update market outcome
     const { error: updateError } = await supabase
@@ -61,6 +74,10 @@ export async function setMarketOutcome(prevState: string | null, formData: FormD
     
     if (updateError) {
       return `Failed to set market outcome: ${updateError.message}`;
+    }
+
+    if (shouldNotify) {
+      void notifyBetSettlement(marketId);
     }
     
     // Revalidate market and movie pages

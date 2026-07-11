@@ -10,6 +10,7 @@ import {
   History
 } from 'lucide-react';
 import { restoreBalance } from '@/app/actions/walletActions';
+import { formatBetRangeDisplay } from '@/lib/formatBetRange';
 import html2canvas from 'html2canvas';
 
 interface UserBet {
@@ -40,41 +41,6 @@ function formatPointsValue(n: number, fractionDigits: 0 | 2 = 0): string {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   })} points`;
-}
-
-/** Display stored range (e.g. "10-30", "[10 - 30]", "400+") as "$10 million – $30 million". Values are box office millions. */
-function formatBetRangeDisplay(selectedRange: string): string {
-  const cleaned = selectedRange.replace(/[\[\]]/g, '').trim();
-  if (!cleaned) return selectedRange;
-
-  const millionPart = (n: number) => {
-    if (!Number.isFinite(n)) return null;
-    const s = Number.isInteger(n)
-      ? n.toLocaleString()
-      : n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    return `$${s} million`;
-  };
-
-  if (cleaned.endsWith('+')) {
-    const raw = cleaned.slice(0, -1).trim();
-    const n = parseFloat(raw);
-    const part = millionPart(n);
-    return part ? `${part}+` : selectedRange;
-  }
-
-  const parts = cleaned.split(/\s*[-–]\s*/).map((s) => s.trim()).filter(Boolean);
-  if (parts.length === 2) {
-    const a = parseFloat(parts[0]);
-    const b = parseFloat(parts[1]);
-    const left = millionPart(a);
-    const right = millionPart(b);
-    if (left && right) return `${left} – ${right}`;
-    return selectedRange;
-  }
-
-  const single = parseFloat(cleaned);
-  const one = millionPart(single);
-  return one ?? selectedRange;
 }
 
 /** Compact range for share cards, e.g. $0–$20M or $150M+ */

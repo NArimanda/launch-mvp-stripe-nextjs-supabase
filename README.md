@@ -73,6 +73,11 @@ SUPABASE_SERVICE_ROLE_KEY=
 # OpenAI Configuration (you'll need to add your key)
 OPENAI_API_KEY=
 
+# Resend (bet settlement emails)
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=BoxOfficeCalls <notifications@boxofficecalls.com>
+# Production (Vercel): NEXT_PUBLIC_APP_URL=https://boxofficecalls.com
+
 # ANALYTICS
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
