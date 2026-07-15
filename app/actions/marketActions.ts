@@ -77,7 +77,7 @@ export async function setMarketOutcome(prevState: string | null, formData: FormD
     }
 
     if (shouldNotify) {
-      void notifyBetSettlement(marketId);
+      await notifyBetSettlement(marketId);
     }
     
     // Revalidate market and movie pages

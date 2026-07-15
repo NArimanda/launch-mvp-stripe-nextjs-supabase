@@ -90,8 +90,8 @@ async function fetchSettledBets(marketId: string): Promise<SettledBetRow[]> {
 }
 
 async function pollSettledBets(marketId: string): Promise<SettledBetRow[]> {
-  const attempts = 3;
-  const delayMs = 300;
+  const attempts = 5;
+  const delayMs = 500;
 
   for (let i = 0; i < attempts; i++) {
     const bets = await fetchSettledBets(marketId);
@@ -128,11 +128,14 @@ function groupBetsByUser(bets: SettledBetRow[]): Map<string, SettledBetRow[]> {
 }
 
 /**
- * Send settlement emails to all bettors on a market. Safe to call fire-and-forget;
- * errors are logged and never thrown.
+ * Send settlement emails to all bettors on a market.
+ * Callers must await this so serverless runtimes (Vercel) finish before freezing.
+ * Errors are logged and never thrown.
  */
 export async function notifyBetSettlement(marketId: string): Promise<void> {
   try {
+    console.log('[notifyBetSettlement] start', marketId);
+
     if (!process.env.RESEND_API_KEY) {
       console.warn('[notifyBetSettlement] RESEND_API_KEY not set; skipping emails');
       return;
@@ -148,6 +151,15 @@ export async function notifyBetSettlement(marketId: string): Promise<void> {
     }
 
     const byUser = groupBetsByUser(bets);
+    console.log(
+      '[notifyBetSettlement] settled bets',
+      bets.length,
+      'users',
+      byUser.size,
+      'market',
+      marketId,
+    );
+
     const resend = getResend();
     const from = getFromEmail();
 
@@ -189,6 +201,8 @@ export async function notifyBetSettlement(marketId: string): Promise<void> {
 
         if (sendError) {
           console.error('[notifyBetSettlement] send failed:', userId, sendError);
+        } else {
+          console.log('[notifyBetSettlement] sent', email);
         }
       } catch (userErr) {
         console.error('[notifyBetSettlement] user notification error:', userId, userErr);
